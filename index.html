@@ -110,6 +110,14 @@
  #canvasContainer [data-photo-strength]{display:block;width:100%;margin:12px 0 8px;}
  [data-photo-status]{min-height:38px;margin:12px 0 14px;font:11px/1.7 var(--sans);color:rgba(245,241,232,.70);}
  .photo-dialog-actions{display:flex;justify-content:flex-end;gap:8px;}#canvasContainer [data-photo-confirm]{background:#1E3F7A!important;}.photo-dialog-actions button:disabled{opacity:.4;cursor:wait;}
+ /* Cropping stays entirely inside the existing scrollable photo dialog. */
+ .photo-crop-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0 8px;font:10px/1.5 var(--mono);color:rgba(245,241,232,.75);}
+ #canvasContainer [data-photo-full]{min-height:27px;font-size:10px;padding:0 9px;}
+ .photo-crop-surface{display:flex;align-items:center;justify-content:center;width:100%;min-width:0;box-sizing:border-box;overflow:hidden;background:rgba(0,0,0,.18);border:1px solid rgba(245,241,232,.18);}
+ [data-photo-original]{display:block;max-width:100%;touch-action:none;cursor:crosshair;outline-offset:-2px;}
+ [data-photo-original]:focus-visible{outline:2px solid #F5F1E8;}
+ .photo-crop-help{margin:8px 0 15px;color:rgba(245,241,232,.60);font:10px/1.7 var(--sans);}
+ #canvasContainer [data-photo-dialog]{overscroll-behavior:contain;overflow-x:hidden;}
 </style>
 </head>
 <body class="min-h-screen flex flex-col">
@@ -169,6 +177,10 @@
       <dialog data-photo-dialog aria-label="本地照片印花预览">
         <div class="photo-dialog-heading"><h2>照片印花预览</h2><button type="button" data-photo-replace>换一张照片</button></div>
         <span data-photo-name></span>
+        <div class="photo-crop-heading"><span>原照片 · 自由框选</span><button type="button" data-photo-full>整张照片</button></div>
+        <div class="photo-crop-surface" data-photo-crop-wrap><canvas data-photo-original tabindex="0" role="img" aria-label="原照片选区：框内拖动可移动，边角可缩放，框外拖动可重新框选；方向键可移动，Home 恢复默认取景"></canvas></div>
+        <p class="photo-crop-help">框内移动，边角缩放，框外拖出新框。固定 4:5；“整张照片”恢复默认居中取景。照片仅在本机处理。</p>
+        <div class="photo-crop-heading"><span>蓝白印花预览</span></div>
         <canvas width="512" height="640" data-photo-preview role="img" aria-label="简化后的蓝白印花预览"></canvas>
         <div class="photo-strength-label"><span>简化程度</span><output data-photo-value>50%</output></div><input type="range" min="0" max="100" value="50" step="1" data-photo-strength aria-label="简化程度">
         <p data-photo-status role="status" aria-live="polite">照片仅在本机处理，不会上传。</p>
@@ -1275,7 +1287,7 @@ function drawClothToContext(ctx, w, h, isFinalClean) {
 }
 
 // Local photo print: original files never leave FileReader / in-memory canvases.
-const photoPrint={saved:null,draft:null,active:false,readVersion:0,previewFrame:null,tintCanvas:null,tintKey:'',revision:0,ui:null};
+const photoPrint={saved:null,draft:null,active:false,readVersion:0,previewFrame:null,tintCanvas:null,tintKey:'',revision:0,ui:null,cropGesture:null};
 function activePatternName(){return photoPrint.active&&photoPrint.saved?'自定义照片':PATTERNS[AppState.patternIdx].name;}
 function invalidatePhotoStencil(){photoPrint.tintKey='';hoverStencilKey='';lastResistPattern=-1;if(threeTexture)threeTexture.needsUpdate=true;}
 function clearCustomPhotoSelection(){if(photoPrint.active){photoPrint.active=false;invalidatePhotoStencil();}}
@@ -1283,10 +1295,10 @@ function photoCropRect(width,height){
   const ratio=512/640;
   return width/height>ratio?{sx:(width-height*ratio)/2,sy:0,sw:height*ratio,sh:height}:{sx:0,sy:(height-width/ratio)/2,sw:width,sh:width/ratio};
 }
-function photoSourceFromImage(image,name){
+function photoSourceFromImage(image,name,selection=null){
   const width=image.naturalWidth||image.width,height=image.naturalHeight||image.height;
   if(!width||!height)throw new Error('图片没有可读取的尺寸，请换一张。');
-  const rect=photoCropRect(width,height),canvas=document.createElement('canvas');canvas.width=512;canvas.height=640;
+  const rect=selection?{sx:selection.x,sy:selection.y,sw:selection.width,sh:selection.height}:photoCropRect(width,height),canvas=document.createElement('canvas');canvas.width=512;canvas.height=640;
   const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,512,640);
   ctx.drawImage(image,rect.sx,rect.sy,rect.sw,rect.sh,0,0,512,640);
   const rgba=ctx.getImageData(0,0,512,640).data,gray=new Float32Array(512*640);
@@ -1294,8 +1306,118 @@ function photoSourceFromImage(image,name){
   // Summed-area luminance makes continuous slider scrubbing independent of photo size.
   const integral=new Float64Array(513*641);
   for(let y=0;y<640;y++){let sum=0;for(let x=0;x<512;x++){sum+=gray[y*512+x];integral[(y+1)*513+x+1]=integral[y*513+x+1]+sum;}}
-  return{name,width:512,height:640,integral};
+  return{name,width:512,height:640,integral,original:image,originalWidth:width,originalHeight:height,selection:{x:rect.sx,y:rect.sy,width:rect.sw,height:rect.sh}};
 }
+// Crop geometry is stored in original-image pixels; the textile is always an undistorted 4:5 window.
+function photoDefaultSelection(width,height){const r=photoCropRect(width,height);return{x:r.sx,y:r.sy,width:r.sw,height:r.sh};}
+function photoSelectionKey(selection){return[selection.x,selection.y,selection.width,selection.height].join(':');}
+function photoMoveSelection(selection,dx,dy,width,height){return{...selection,x:Math.max(0,Math.min(width-selection.width,selection.x+dx)),y:Math.max(0,Math.min(height-selection.height,selection.y+dy))};}
+function photoSizeFromAnchor(anchor,sx,sy,w,width,height,minimum){
+  const ratio=4/5,maxWidth=Math.max(0,Math.min(sx>0?width-anchor.x:anchor.x,(sy>0?height-anchor.y:anchor.y)*ratio));
+  const size=Math.max(Math.min(minimum,maxWidth),Math.min(maxWidth,w));
+  return{x:sx>0?anchor.x:anchor.x-size,y:sy>0?anchor.y:anchor.y-size/ratio,width:size,height:size/ratio};
+}
+function photoResizeSelection(selection,handle,point,width,height,minimum){
+  const ratio=4/5,cx=selection.x+selection.width/2,cy=selection.y+selection.height/2;
+  if(handle.length===2){
+    const sx=handle.includes('w')?-1:1,sy=handle.includes('n')?-1:1;
+    const anchor={x:sx<0?selection.x+selection.width:selection.x,y:sy<0?selection.y+selection.height:selection.y};
+    return photoSizeFromAnchor(anchor,sx,sy,Math.max(sx*(point.x-anchor.x),sy*(point.y-anchor.y)*ratio),width,height,minimum);
+  }
+  if(handle==='n'||handle==='s'){
+    const sy=handle==='n'?-1:1,anchorY=sy<0?selection.y+selection.height:selection.y;
+    const maxWidth=Math.min(2*Math.min(cx,width-cx),(sy>0?height-anchorY:anchorY)*ratio);
+    const w=Math.max(Math.min(minimum,maxWidth),Math.min(maxWidth,sy*(point.y-anchorY)*ratio));
+    return{x:cx-w/2,y:sy>0?anchorY:anchorY-w/ratio,width:w,height:w/ratio};
+  }
+  const sx=handle==='w'?-1:1,anchorX=sx<0?selection.x+selection.width:selection.x;
+  const maxWidth=Math.min(sx>0?width-anchorX:anchorX,2*Math.min(cy,height-cy)*ratio);
+  const w=Math.max(Math.min(minimum,maxWidth),Math.min(maxWidth,sx*(point.x-anchorX)));
+  return{x:sx>0?anchorX:anchorX-w,y:cy-w/ratio/2,width:w,height:w/ratio};
+}
+function photoCropHandles(rect){return[
+  ['nw',rect.x,rect.y],['ne',rect.x+rect.width,rect.y],['se',rect.x+rect.width,rect.y+rect.height],['sw',rect.x,rect.y+rect.height],
+  ['n',rect.x+rect.width/2,rect.y],['e',rect.x+rect.width,rect.y+rect.height/2],['s',rect.x+rect.width/2,rect.y+rect.height],['w',rect.x,rect.y+rect.height/2]
+];}
+function photoCropHit(selection,point,scaleX,scaleY,touch){
+  // Corner targets are enlarged in CSS pixels, independent of image size or screen density.
+  let closest=null,distance=Infinity;const radius=touch?20:10;
+  for(const [name,x,y]of photoCropHandles(selection)){
+    if(name.length!==2)continue;const d=Math.hypot((x-point.x)*scaleX,(y-point.y)*scaleY);
+    if(d<=radius&&d<distance){closest=name;distance=d;}
+  }
+  if(closest)return closest;
+  const edge=touch?11:6,left=(point.x-selection.x)*scaleX,right=(point.x-selection.x-selection.width)*scaleX,top=(point.y-selection.y)*scaleY,bottom=(point.y-selection.y-selection.height)*scaleY;
+  if(left>=-edge&&right<=edge){if(Math.abs(top)<=edge)return'n';if(Math.abs(bottom)<=edge)return's';}
+  if(top>=-edge&&bottom<=edge){if(Math.abs(left)<=edge)return'w';if(Math.abs(right)<=edge)return'e';}
+  return left>0&&right<0&&top>0&&bottom<0?'move':'new';
+}
+function photoCropPointer(event){
+  const draft=photoPrint.draft,rect=photoPrint.ui.original.getBoundingClientRect();
+  return{x:Math.max(0,Math.min(draft.originalWidth,(event.clientX-rect.left)/rect.width*draft.originalWidth)),y:Math.max(0,Math.min(draft.originalHeight,(event.clientY-rect.top)/rect.height*draft.originalHeight)),scaleX:rect.width/draft.originalWidth,scaleY:rect.height/draft.originalHeight};
+}
+function drawPhotoCrop(){
+  const draft=photoPrint.draft,ui=photoPrint.ui;if(!draft||!ui||!ui.dialog.open)return;
+  const maxWidth=Math.max(1,ui.cropWrap.clientWidth||ui.dialog.clientWidth-40||360),maxHeight=Math.min(280,Math.max(120,window.innerHeight*.32));
+  const scale=Math.min(maxWidth/draft.originalWidth,maxHeight/draft.originalHeight),w=draft.originalWidth*scale,h=draft.originalHeight*scale;
+  const ratio=Math.min(2,window.devicePixelRatio||1),canvas=ui.original;canvas.width=Math.max(1,Math.round(w*ratio));canvas.height=Math.max(1,Math.round(h*ratio));canvas.style.width=w+'px';canvas.style.height=h+'px';
+  const ctx=canvas.getContext('2d');ctx.setTransform(ratio,0,0,ratio,0,0);ctx.drawImage(draft.original,0,0,w,h);
+  const r=draft.selection,x=r.x*scale,y=r.y*scale,rw=r.width*scale,rh=r.height*scale;
+  ctx.fillStyle='rgba(14,21,38,.58)';ctx.fillRect(0,0,w,y);ctx.fillRect(0,y+rh,w,Math.max(0,h-y-rh));ctx.fillRect(0,y,x,rh);ctx.fillRect(x+rw,y,Math.max(0,w-x-rw),rh);
+  ctx.strokeStyle='#F5F1E8';ctx.lineWidth=1.5;ctx.strokeRect(x,y,rw,rh);
+  for(const [name,hx,hy]of photoCropHandles({x,y,width:rw,height:rh})){
+    const hr=name.length===2?4.5:3;ctx.beginPath();ctx.arc(Math.max(hr,Math.min(w-hr,hx)),Math.max(hr,Math.min(h-hr,hy)),hr,0,Math.PI*2);ctx.fillStyle='#F5F1E8';ctx.fill();ctx.strokeStyle='#1E3F7A';ctx.lineWidth=1;ctx.stroke();
+  }
+}
+function queuePhotoDraftPreview(){
+  const ui=photoPrint.ui;if(!photoPrint.draft||!ui)return;ui.confirm.disabled=true;
+  if(photoPrint.previewFrame!==null)return;
+  photoPrint.previewFrame=requestAnimationFrame(()=>{photoPrint.previewFrame=null;updatePhotoDraftPreview();});
+}
+function stopPhotoCropDrag(){
+  const drag=photoPrint.cropGesture;photoPrint.cropGesture=null;
+  if(drag&&photoPrint.ui.original.hasPointerCapture(drag.pointerId))photoPrint.ui.original.releasePointerCapture(drag.pointerId);
+}
+function resetPhotoCrop(){
+  const draft=photoPrint.draft;if(!draft)return;stopPhotoCropDrag();
+  draft.selection=photoDefaultSelection(draft.originalWidth,draft.originalHeight);drawPhotoCrop();queuePhotoDraftPreview();
+}
+function initPhotoCropUI(){
+  const ui=photoPrint.ui,canvas=ui.original,cursors={nw:'nwse-resize',se:'nwse-resize',ne:'nesw-resize',sw:'nesw-resize',n:'ns-resize',s:'ns-resize',e:'ew-resize',w:'ew-resize',move:'move',new:'crosshair'};
+  ui.full.addEventListener('click',resetPhotoCrop);
+  canvas.addEventListener('pointerdown',event=>{
+    if(!photoPrint.draft||AppState.stage!==0||photoPrint.cropGesture||event.isPrimary===false||(event.pointerType!=='touch'&&event.button!==0))return;
+    event.preventDefault();const p=photoCropPointer(event),initial={...photoPrint.draft.selection},mode=photoCropHit(initial,p,p.scaleX,p.scaleY,event.pointerType==='touch');
+    photoPrint.cropGesture={pointerId:event.pointerId,start:p,initial,mode};canvas.setPointerCapture(event.pointerId);canvas.style.cursor=cursors[mode];
+  });
+  canvas.addEventListener('pointermove',event=>{
+    const draft=photoPrint.draft;if(!draft)return;const p=photoCropPointer(event),drag=photoPrint.cropGesture;
+    if(!drag){canvas.style.cursor=cursors[photoCropHit(draft.selection,p,p.scaleX,p.scaleY,event.pointerType==='touch')];return;}
+    if(drag.pointerId!==event.pointerId)return;event.preventDefault();
+    const minimum=Math.min(draft.originalWidth,draft.originalHeight*.8,28/p.scaleX);let selection;
+    if(drag.mode==='move')selection=photoMoveSelection(drag.initial,p.x-drag.start.x,p.y-drag.start.y,draft.originalWidth,draft.originalHeight);
+    else if(drag.mode==='new'){
+      const dx=p.x-drag.start.x,dy=p.y-drag.start.y,sx=dx<0?-1:1,sy=dy<0?-1:1,w=Math.max(Math.abs(dx),Math.abs(dy)*.8);
+      if(w<minimum)return;selection=photoSizeFromAnchor(drag.start,sx,sy,w,draft.originalWidth,draft.originalHeight,minimum);
+      if(selection.width<minimum)return;
+    }else selection=photoResizeSelection(drag.initial,drag.mode,p,draft.originalWidth,draft.originalHeight,minimum);
+    if(selection.width<=0||selection.height<=0)return;draft.selection=selection;drawPhotoCrop();queuePhotoDraftPreview();
+  });
+  canvas.addEventListener('pointerup',event=>{if(photoPrint.cropGesture?.pointerId===event.pointerId){stopPhotoCropDrag();queuePhotoDraftPreview();}});
+  canvas.addEventListener('pointercancel',event=>{
+    if(photoPrint.cropGesture?.pointerId!==event.pointerId)return;
+    if(photoPrint.draft)photoPrint.draft.selection={...photoPrint.cropGesture.initial};stopPhotoCropDrag();drawPhotoCrop();queuePhotoDraftPreview();
+  });
+  canvas.addEventListener('lostpointercapture',()=>{if(photoPrint.cropGesture){photoPrint.cropGesture=null;queuePhotoDraftPreview();}});
+  canvas.addEventListener('keydown',event=>{
+    const draft=photoPrint.draft;if(!draft)return;
+    if(event.code==='Home'){event.preventDefault();resetPhotoCrop();return;}
+    const delta={ArrowLeft:[-1,0],ArrowRight:[1,0],ArrowUp:[0,-1],ArrowDown:[0,1]}[event.code];if(!delta)return;event.preventDefault();
+    const step=draft.originalWidth*(event.shiftKey?.05:.01);draft.selection=photoMoveSelection(draft.selection,delta[0]*step,delta[1]*step,draft.originalWidth,draft.originalHeight);drawPhotoCrop();queuePhotoDraftPreview();
+  });
+  window.addEventListener('resize',drawPhotoCrop);
+}
+
 function photoBoxBlur(values,width,height,radius){
   if(!radius)return Float32Array.from(values);
   const horizontal=new Float32Array(values.length),out=new Float32Array(values.length);
@@ -1410,12 +1532,15 @@ function syncPhotoImportUI(){
   if(AppState.stage!==0)cancelPhotoDraft();
 }
 function cancelPhotoDraft(){
+  stopPhotoCropDrag();
   photoPrint.readVersion++;if(photoPrint.previewFrame!==null){cancelAnimationFrame(photoPrint.previewFrame);photoPrint.previewFrame=null;}
   photoPrint.draft=null;const ui=photoPrint.ui;if(ui&&ui.dialog.open)ui.dialog.close();
 }
 function updatePhotoDraftPreview(){
   const draft=photoPrint.draft,ui=photoPrint.ui;if(!draft||!ui||AppState.stage!==0)return;
   try{
+    const cropKey=photoSelectionKey(draft.selection);
+    if(draft.sourceSelection!==cropKey){draft.source=photoSourceFromImage(draft.original,draft.source.name,draft.selection);draft.sourceSelection=cropKey;}
     const result=simplifyPhotoPrint(draft.source,draft.strength);draft.result=result;paintPhotoPreview(ui.preview,result);
     ui.value.textContent=Math.round(draft.strength)+'%';
     const sparse=result.whiteFraction<.015||result.whiteFraction>.985;
@@ -1423,15 +1548,17 @@ function updatePhotoDraftPreview(){
     ui.status.textContent=sparse?'这张图的明暗层次太少，请换一张对比更清楚的照片。':'浅色留白浆，深色随布入染；确认后仍需完成六次往复刮浆。';
   }catch(error){draft.result=null;draft.usable=false;ui.confirm.disabled=true;photoImportError('处理失败，请换一张照片重试。');}
 }
-function showPhotoDraft(source,strength=50){
+function showPhotoDraft(source,strength=50,selection=source.selection){
   if(AppState.stage!==0)return;
-  const ui=photoPrint.ui;photoPrint.draft={source,strength,result:null,usable:false};ui.strength.value=strength;ui.name.textContent=source.name;ui.confirm.disabled=true;ui.error.hidden=true;
-  if(!ui.dialog.open)ui.dialog.showModal();updatePhotoDraftPreview();
+  stopPhotoCropDrag();
+  const crop={...selection},ui=photoPrint.ui;photoPrint.draft={source,strength,result:null,usable:false,original:source.original,originalWidth:source.originalWidth,originalHeight:source.originalHeight,selection:crop,sourceSelection:photoSelectionKey(source.selection)};
+  ui.strength.value=strength;ui.name.textContent=source.name;ui.confirm.disabled=true;ui.error.hidden=true;
+  if(!ui.dialog.open)ui.dialog.showModal();drawPhotoCrop();updatePhotoDraftPreview();
 }
 function choosePhotoFile(){if(AppState.stage!==0)return;const input=photoPrint.ui.file;input.value='';input.click();}
 function openPhotoImporter(){
   if(AppState.stage!==0)return;
-  if(photoPrint.saved)showPhotoDraft(photoPrint.saved.source,photoPrint.saved.strength);else choosePhotoFile();
+  if(photoPrint.saved)showPhotoDraft(photoPrint.saved.source,photoPrint.saved.strength,photoPrint.saved.selection);else choosePhotoFile();
 }
 function readLocalPhoto(file){
   if(!file||AppState.stage!==0)return;
@@ -1450,13 +1577,13 @@ function readLocalPhoto(file){
 }
 function confirmPhotoDraft(){
   const draft=photoPrint.draft;if(AppState.stage!==0||!draft||!draft.result||!draft.usable||photoPrint.previewFrame!==null)return;
-  photoPrint.saved={source:draft.source,strength:draft.strength,result:draft.result,registration:buildPhotoRegistration(draft.result)};
+  photoPrint.saved={source:draft.source,strength:draft.strength,selection:{...draft.selection},result:draft.result,registration:buildPhotoRegistration(draft.result)};
   photoPrint.active=true;photoPrint.revision++;invalidatePhotoStencil();document.getElementById('hudPatternName').textContent='自定义照片';
   cancelPhotoDraft();updatePasteTexture();
 }
 function initPhotoImportUI(){
   const find=selector=>document.querySelector(selector);
-  const ui=photoPrint.ui={entry:find('[data-photo-entry]'),button:find('[data-photo-import]'),file:find('[data-photo-file]'),error:find('[data-photo-entry-error]'),dialog:find('[data-photo-dialog]'),preview:find('[data-photo-preview]'),strength:find('[data-photo-strength]'),value:find('[data-photo-value]'),name:find('[data-photo-name]'),status:find('[data-photo-status]'),confirm:find('[data-photo-confirm]')};
+  const ui=photoPrint.ui={entry:find('[data-photo-entry]'),button:find('[data-photo-import]'),file:find('[data-photo-file]'),error:find('[data-photo-entry-error]'),dialog:find('[data-photo-dialog]'),preview:find('[data-photo-preview]'),strength:find('[data-photo-strength]'),value:find('[data-photo-value]'),name:find('[data-photo-name]'),status:find('[data-photo-status]'),confirm:find('[data-photo-confirm]'),original:find('[data-photo-original]'),cropWrap:find('[data-photo-crop-wrap]'),full:find('[data-photo-full]')};
   ui.button.addEventListener('click',openPhotoImporter);ui.button.addEventListener('keydown',event=>event.stopPropagation());
   ui.file.addEventListener('change',()=>{if(ui.file.files&&ui.file.files[0])readLocalPhoto(ui.file.files[0]);});
   find('[data-photo-replace]').addEventListener('click',choosePhotoFile);find('[data-photo-cancel]').addEventListener('click',cancelPhotoDraft);ui.confirm.addEventListener('click',confirmPhotoDraft);
@@ -1465,9 +1592,9 @@ function initPhotoImportUI(){
   ui.dialog.addEventListener('keydown',event=>event.stopPropagation());
   ui.strength.addEventListener('input',()=>{
     if(!photoPrint.draft)return;photoPrint.draft.strength=Number(ui.strength.value);ui.value.textContent=ui.strength.value+'%';ui.confirm.disabled=true;
-    if(photoPrint.previewFrame!==null)cancelAnimationFrame(photoPrint.previewFrame);
-    photoPrint.previewFrame=requestAnimationFrame(()=>{photoPrint.previewFrame=null;updatePhotoDraftPreview();});
+    queuePhotoDraftPreview();
   });
+  initPhotoCropUI();
   syncPhotoImportUI();
 }
 
