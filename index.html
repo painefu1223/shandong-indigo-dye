@@ -1,0 +1,2402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>青出于蓝 · 山东蓝印花布草木染 3D 多视角交互终端</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@500;700&display=swap');
+ :root{--paper:#F5F1E8;--ink:#1A1A1A;--line:#D8D2C4;--indigo:#1E3F7A;--active:#2E5AAC;--stage:#0E1526;--sans:'Inter','Noto Sans SC',sans-serif;--mono:ui-monospace,SFMono-Regular,Consolas,monospace;--edge:var(--line);--panel:var(--paper);--cotton:var(--paper);--clay:var(--indigo);--serif:var(--sans);}
+ *{box-sizing:border-box;}html{width:100%;height:100%;overflow:hidden;}
+ body{margin:0;width:100%;height:100dvh;min-height:0!important;overflow:hidden;display:grid!important;grid-template-rows:auto minmax(0,1fr);background:var(--paper);color:var(--ink);font:400 13px/1.6 var(--sans);}
+ h1,h2,h3,p{margin:0;}h1,h2,h3,.serif-title{font-family:var(--sans);font-weight:700;}
+ [hidden],.hidden,.compat-bindings{display:none!important;}[class*="rounded-"]{border-radius:2px;}[class*="shadow-"]{box-shadow:none!important;}
+ [class*="bg-slate-"],[class*="bg-indigo-"],[class*="bg-emerald-"],[class*="bg-amber-"]{background-color:var(--paper)!important;}
+ [class*="border-slate-"],[class*="border-indigo-"],[class*="border-amber-"]{border-color:var(--line)!important;}
+ [class*="text-white"],[class*="text-slate-"],[class*="text-indigo-"],[class*="text-amber-"],[class*="text-emerald-"]{color:var(--ink)!important;}
+ .font-mono,kbd,[id^="raw"],#serialLog{font-family:var(--mono);font-variant-numeric:tabular-nums;}.micro-label{font:9px/1.5 var(--mono);letter-spacing:.2em;text-transform:uppercase;}
+ button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:0 12px;border:1px solid var(--line);border-radius:2px;background:var(--paper);color:var(--ink);font:11px/1.4 var(--sans);cursor:pointer;box-shadow:none!important;background-image:none!important;transition:background .18s,color .18s,border-color .18s;}
+ button:hover{background:var(--indigo)!important;border-color:var(--indigo)!important;color:var(--paper)!important;}button:focus-visible,input:focus-visible{outline:2px solid var(--indigo);outline-offset:3px;}
+ header.cloth-header{width:100%;height:108px;min-height:0;padding:0 24px 8px;display:grid;grid-template-rows:68px 30px;gap:0;background:var(--paper);border-bottom:1px solid var(--line);}
+ .cloth-header-top{display:flex;align-items:center;justify-content:space-between;gap:24px;min-width:0;}
+ .title-lock{min-width:0;flex-shrink:0;}.modern-title-row{display:flex;align-items:center;gap:14px;white-space:nowrap;}
+ .title-lock h1{font:700 24px/1.25 var(--sans);letter-spacing:.04em;color:var(--ink);}
+ .title-divider{height:20px;width:1px;background:var(--line);}.english-title{font:700 11px/1.4 'Inter',sans-serif;letter-spacing:.3em;color:rgba(26,26,26,.55);}
+ .english-micro-label{margin-top:5px;font:500 8px/1.5 'Inter',sans-serif;letter-spacing:.18em;color:rgba(26,26,26,.45);white-space:nowrap;}
+ .header-tools,.serial-cluster,.connect-control{display:flex;align-items:center;gap:12px;min-width:0;}
+ #serialBadge{font:9px/1.5 var(--mono);color:var(--ink);white-space:nowrap;}#serialText{color:var(--ink)!important;}
+ #serialDot{width:5px;height:5px;border-radius:50%;background:#B88935;flex-shrink:0;}#serialDot.bg-emerald-400{background:#29805C!important;}
+ #connectSerialBtn{border-radius:999px;white-space:nowrap;padding:0 14px;}.header-restart{margin-left:8px;}.header-restart button{font:10px/1.4 var(--mono);white-space:nowrap;}
+ #stageNav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:center;gap:0;margin:0;padding:0;background:transparent!important;border:0;border-top:1px solid var(--line);border-radius:0;min-width:0;}
+ #stageNav .stage-tab{position:relative;display:flex;align-items:center;justify-content:flex-start;gap:8px;min-height:26px;padding:0 10px!important;border:0;border-radius:0;background:transparent!important;color:var(--ink)!important;white-space:nowrap;box-shadow:none;}
+ #stageNav .stage-tab:not(:last-child){border-right:1px solid var(--line);}.station-number{position:relative;font:400 10px/1 var(--mono);}.station-name{font:400 11px/1.5 var(--sans);}.station-status{width:10px;height:10px;}
+ #stageNav .stage-tab.bg-indigo-600 .station-number,#stageNav .stage-tab.bg-indigo-600 .station-name{font-weight:700;}
+ #stageNav .stage-tab.bg-indigo-600 .station-number::before{content:'';position:absolute;left:-7px;top:3px;width:4px;height:4px;border-radius:50%;background:var(--indigo);}
+ #stageNav .stage-tab:has(~ .stage-tab.bg-indigo-600) .station-number::before{content:'✓';font-size:9px;color:var(--indigo);margin-right:2px;}
+ #stageNav .stage-tab.bg-indigo-600 ~ .stage-tab{opacity:.4;pointer-events:none;}
+ main.workshop-layout{position:relative;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.38fr);gap:0!important;min-height:0;width:100%!important;max-width:none!important;margin:0!important;padding:8px 12px 12px!important;overflow:hidden;transition:grid-template-columns .35s;}
+ main.workshop-layout.panel-collapsed{grid-template-columns:minmax(0,1fr) minmax(0,0fr);}
+ .workshop-layout>section,.workshop-layout>aside{grid-column:auto!important;min-width:0;min-height:0;}
+ .workshop-layout>section{position:relative;display:flex;flex-direction:column;gap:0!important;height:100%;overflow:hidden;}
+ #canvasContainer{position:relative;flex:1;min-height:0!important;max-height:none!important;height:100%!important;width:100%;background:#0E1526!important;border:1px solid var(--line)!important;border-radius:2px;overflow:hidden;isolation:isolate;box-shadow:none!important;}
+ #threeCanvas{height:100%;width:100%;background:#0E1526;}#threeCanvas canvas{display:block;width:100%!important;height:100%!important;}
+ .canvas-tools{position:absolute;right:16px;top:12px;z-index:25;display:flex;gap:8px;}.canvas-tools button{min-height:30px;font:10px/1.5 var(--mono);background:var(--paper);color:var(--ink);}
+ #canvasContainer>.stage-hud,#canvasContainer>.stage-progress{position:absolute;top:56px;border:1px solid var(--line)!important;border-radius:2px;background:rgba(245,241,232,.96)!important;color:var(--ink);padding:11px;width:238px;z-index:10;}
+ #canvasContainer>.stage-hud{left:16px;opacity:.65;transition:opacity .25s;pointer-events:auto;}#canvasContainer>.stage-hud:hover,#canvasContainer>.stage-hud.hud-changed{opacity:1;}
+ #canvasContainer>.stage-progress{right:16px;width:238px;}
+ .stage-hud .text-xs{font-size:10px;}.stage-hud [id]{font-family:var(--mono);font-size:10px;color:var(--ink)!important;}.stage-hud .text-slate-400{color:rgba(26,26,26,.6)!important;}
+ #hudColorSwatch{display:inline-block;width:12px;height:12px;border:1px solid var(--line)!important;border-radius:0;}
+ #progressLabel{font:10px/1.6 var(--mono);letter-spacing:.04em;}#progressPercent{font:600 12px/1.5 var(--mono);color:var(--ink)!important;}
+ .stage-progress>.w-full{height:3px!important;border-radius:0;background:var(--line)!important;}#progressBarFill{background:var(--active)!important;background-image:none!important;}
+ #passMark{background:#B88935!important;}[data-progress-legend]{font-size:8px;color:rgba(26,26,26,.6)!important;}[data-paste-status]{font:9px/1.7 var(--mono);color:rgba(26,26,26,.65)!important;}
+ #guideBanner.process-chip{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);z-index:20;display:flex;align-items:center;justify-content:center;gap:10px;width:max-content;max-width:calc(100% - 32px);padding:9px 16px;border:1px solid var(--line);border-radius:999px;background:rgba(245,241,232,.97);color:var(--ink);box-shadow:none;pointer-events:none;}
+ #guideTitle{font:500 12px/1.6 var(--sans);text-align:center;color:var(--ink)!important;}.chip-dot{width:7px;height:7px;flex-shrink:0;border-radius:50%;background:var(--active);animation:chipBreathe 2.8s ease-in-out infinite;}
+ #guideBanner[data-ready="true"] .chip-dot{animation-duration:1.25s;}#guideBanner[data-final="true"] .chip-dot{background:#B88935;}#guideBanner.chip-celebrate{animation:chipEmphasis 2s ease-out both;}
+ .workshop-layout>aside{height:100%;max-height:100%;padding:18px 18px 22px;background:var(--paper);border:1px solid var(--line);border-left:0;overflow:auto;opacity:1;visibility:visible;transform:translateX(0);transition:opacity .3s,visibility .3s,transform .35s;}
+ .workshop-layout.panel-collapsed>aside{padding:0;border:0;opacity:0;visibility:hidden;pointer-events:none;transform:translateX(24px);}
+ .workbench-heading{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}.workbench-heading button{min-height:26px;font-size:10px;}
+ #cardJoy,#cardLight,#cardPot,#btn1Card,#btn2Card{background:var(--paper)!important;border:1px solid var(--line)!important;border-radius:2px!important;box-shadow:none!important;opacity:.55;}
+ #cardJoy,#cardLight,#cardPot{padding:14px!important;}aside h2{font:600 12px/1.6 var(--sans);}aside p{font:400 10px/1.8 var(--sans);color:rgba(26,26,26,.65);}
+ aside [id^="raw"]{padding:2px 4px;font:9px/1.5 var(--mono);border:1px solid var(--line);}.workshop-layout aside [id^="card"]>.flex:first-child{flex-wrap:wrap;gap:5px;}
+ .physical-key-button{width:100%;min-height:34px;font-size:10px;}.key-caption{font:9px/1.6 var(--mono);margin-top:6px;color:rgba(26,26,26,.6);}
+ .next-pending,#cardLight.next-pending,#btn1Card.next-pending,#btn2Card.next-pending{position:relative;opacity:1!important;border-color:var(--indigo)!important;}
+ .next-pending::before{content:'';position:absolute;right:4px;top:7px;width:4px;height:4px;border-radius:50%;background:var(--indigo);animation:chipBreathe 2s infinite;}
+ .next-pending[data-next-label]::after{content:attr(data-next-label);position:absolute;right:12px;top:-7px;padding:0 3px;background:var(--paper);font:8px/1.5 var(--mono);color:var(--indigo);}
+ body:has(.stage-tab[data-stage="0"].bg-indigo-600) :is(#cardPot,#btn1Card),body:has(.stage-tab[data-stage="1"].bg-indigo-600) :is(#cardPot,#cardLight),body:has(.stage-tab[data-stage="2"].bg-indigo-600) :is(#cardJoy,#cardLight),body:has(.stage-tab[data-stage="3"].bg-indigo-600) :is(#cardLight,#btn2Card),body:has(.stage-tab[data-stage="4"].bg-indigo-600) :is(#cardJoy,#btn1Card,#btn2Card),.spotlight-active{opacity:1!important;}
+ .spotlight-active{animation:controlPulse 1.8s ease-in-out infinite;}.workshop-keyhelp{position:static;padding:14px 0!important;border:0!important;border-top:1px solid var(--line)!important;border-radius:0;font-size:10px;margin-top:12px;}
+ kbd{border:1px solid var(--line);border-radius:2px;}#serialLog{font:9px/1.6 var(--mono);color:rgba(26,26,26,.65)!important;}#joyDot{background:var(--indigo)!important;border-radius:50%;}aside .w-16.h-16{border:1px solid var(--line)!important;}aside .w-16.h-16>.absolute{background:var(--line)!important;}
+ input[type=range]{appearance:none;-webkit-appearance:none;background:transparent;}input[type=range]::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:12px;height:12px;margin-top:-4px;border:0;border-radius:50%;background:var(--indigo);cursor:pointer;}input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--line);}input[type=range]::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--indigo);}input[type=range]::-moz-range-track{height:4px;background:var(--line);}
+ #certificatePanel{position:absolute;right:16px;bottom:84px;z-index:14;display:flex;flex-direction:row;align-items:center;gap:15px;max-width:430px;width:calc(100% - 32px);max-height:calc(100% - 160px);padding:18px!important;overflow:auto;border:1px solid var(--line)!important;border-radius:2px;background:var(--paper)!important;box-shadow:none;}
+ #certificatePanel.hidden{display:none!important;}#exportCanvas{width:110px;height:auto;border:1px solid var(--line)!important;border-radius:0;box-shadow:none;}#certTitle{font:600 15px/1.6 var(--sans);}#certificatePanel p{font-size:10px;}#certificatePanel .grid>div{padding:6px;border:1px solid var(--line);border-radius:2px;}#certificatePanel button{font-size:10px;}
+ .completion-reset{position:absolute;left:50%;bottom:83px;transform:translateX(-50%);z-index:23;display:flex;align-items:center;gap:12px;width:max-content;}.completion-reset>span{font:9px/1.5 var(--mono);color:rgba(245,241,232,.65);}button[data-new-cloth]{height:40px;min-height:40px;padding:0 18px;background:var(--paper);color:var(--ink);border-radius:2px;font-size:12px;}
+ [data-view-notice]{position:absolute;top:52px;left:50%;transform:translateX(-50%);z-index:30;padding:8px 12px;background:var(--paper);border:1px solid var(--line);font:11px/1.6 var(--sans);}
+ [data-fullscreen-workbench]{display:none;}
+ #canvasContainer:fullscreen,#canvasContainer.is-stage-fullscreen{position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;min-height:0!important;max-height:none!important;z-index:9999;border-radius:0;}
+ .is-stage-fullscreen [data-fullscreen-workbench]{display:block;position:absolute;top:50px;right:0;bottom:0;width:min(28vw,360px);z-index:35;pointer-events:none;}
+ .is-stage-fullscreen [data-fullscreen-workbench]>aside{height:100%;padding:18px;overflow:auto;background:var(--paper);border-left:1px solid var(--line);opacity:0;visibility:hidden;transform:translateX(100%);transition:transform .35s,opacity .3s,visibility .3s;}
+ .is-stage-fullscreen.workbench-open [data-fullscreen-workbench]>aside{opacity:1;visibility:visible;transform:translateX(0);pointer-events:auto;}.is-stage-fullscreen #threeCanvas{width:100%;transition:width .35s;}.is-stage-fullscreen.workbench-open #threeCanvas{width:calc(100% - min(28vw,360px));}
+ @keyframes chipBreathe{0%,100%{opacity:.45;}50%{opacity:1;}}@keyframes chipEmphasis{30%{border-color:var(--indigo);}}@keyframes controlPulse{50%{border-color:var(--indigo);}}.station-transition .station-number{animation:stationEnter .3s ease-out;}@keyframes stationEnter{from{opacity:.4;transform:translateY(3px);}to{opacity:1;transform:translateY(0);}}
+ @media(max-width:1199px){header.cloth-header{padding-left:16px;padding-right:16px;}.cloth-header-top{gap:14px;}.title-lock h1{font-size:22px;}.english-title{font-size:10px;letter-spacing:.22em;}.english-micro-label{font-size:7px;letter-spacing:.12em;}.header-tools,.serial-cluster{gap:8px;}#serialBadge{font-size:8px;max-width:125px;overflow:hidden;text-overflow:ellipsis;}#connectSerialBtn{font-size:10px;padding:0 10px;}.header-restart{margin-left:0;}}
+ @media(max-width:1023px){main.workshop-layout,main.workshop-layout.panel-collapsed{grid-template-columns:minmax(0,1fr);}.workshop-layout>aside{position:absolute;right:12px;top:8px;bottom:12px;z-index:40;width:min(360px,88vw);height:auto;max-height:none;padding:20px;border:1px solid var(--line);}.workshop-layout.panel-collapsed>aside{padding:20px;border:1px solid var(--line);transform:translateX(calc(100% + 20px));}}
+ @media(max-width:767px){header.cloth-header{height:116px;padding:0 12px 6px;grid-template-rows:78px 30px;}.cloth-header-top{flex-wrap:wrap;justify-content:flex-start;align-content:center;gap:4px;}.title-lock{width:100%;}.modern-title-row{gap:9px;}.title-lock h1{font-size:19px;line-height:1.2;}.title-divider{height:15px;}.english-title{font-size:9px;letter-spacing:.2em;}.english-micro-label{margin-top:2px;font-size:6px;line-height:1.3;letter-spacing:.1em;}.header-tools{width:100%;justify-content:space-between;}.serial-cluster{flex:1;justify-content:flex-start;gap:8px;}#serialBadge{max-width:140px;font-size:7px;}.connect-control{gap:5px;}#connectSerialBtn{min-height:24px;font-size:9px;padding:0 10px;}.header-restart button{min-height:24px;font-size:9px;padding:0 8px;}#stageNav .stage-tab{gap:4px;min-height:22px;padding:0 5px!important;}.station-name{font-size:8px;}.station-number{font-size:8px;}.station-status{display:none;}main.workshop-layout{padding:5px 6px 7px!important;}#canvasContainer>.stage-hud{left:10px;width:calc(50% - 20px);padding:8px;}#canvasContainer>.stage-progress{right:10px;width:calc(50% - 20px);padding:8px;}.stage-hud .flex{flex-wrap:wrap;gap:3px;}.stage-hud .text-xs,.stage-hud [id]{font-size:8px;}#progressLabel{font-size:8px;}#progressPercent{font-size:10px;}.stage-progress .text-\[10px\],[data-progress-legend]{font-size:7px;}[data-paste-status]{font-size:8px;}.canvas-tools{top:10px;right:10px;gap:6px;}.canvas-tools button{min-height:26px;font-size:9px;padding:0 9px;}#guideTitle{font-size:10px;}#guideBanner.process-chip{bottom:18px;padding:8px 12px;}.completion-reset>span{display:none;}#certificatePanel{right:10px;bottom:73px;padding:12px!important;max-height:calc(100% - 140px);max-width:330px;}#exportCanvas{width:74px;}#certTitle{font-size:12px;}.workshop-layout>aside{top:5px;right:6px;bottom:7px;}.is-stage-fullscreen [data-fullscreen-workbench]{width:28vw;}.is-stage-fullscreen.workbench-open #threeCanvas{width:72%;}}
+ @media(max-height:500px) and (min-width:600px){header.cloth-header{height:92px;grid-template-rows:59px 26px;padding-bottom:5px;}.cloth-header-top{flex-wrap:nowrap;}.title-lock{width:auto;}.header-tools{width:auto;}.title-lock h1{font-size:18px;}#serialBadge{display:none;}.canvas-tools{top:8px;}#canvasContainer>.stage-hud,#canvasContainer>.stage-progress{top:44px;}#canvasContainer>.stage-hud{max-height:calc(100% - 100px);overflow:auto;}#certificatePanel{max-height:calc(100% - 120px);}}
+ @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;}}
+
+ /* Stage overlays only: dimensions, anchors, contents and all paper UI stay unchanged. */
+ #canvasContainer>.stage-hud,#canvasContainer>.stage-progress{background:rgba(14,21,38,.64)!important;border:1px solid rgba(245,241,232,.28)!important;border-radius:9px;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);box-shadow:0 3px 12px rgba(0,0,0,.10)!important;opacity:1;}
+ #canvasContainer>.stage-hud [id],#canvasContainer>.stage-progress [id],#canvasContainer>.stage-hud [class*="text-"],#canvasContainer>.stage-progress [class*="text-"]{color:rgba(245,241,232,.88)!important;}
+ #canvasContainer>.stage-hud .text-slate-400,#canvasContainer>.stage-progress .text-slate-400,#canvasContainer>.stage-progress [data-progress-legend],#canvasContainer>.stage-progress [data-paste-status]{color:rgba(245,241,232,.62)!important;}
+ #canvasContainer>.stage-hud [class*="bg-slate-"],#canvasContainer>.stage-progress [class*="bg-slate-"]{background:transparent!important;}
+ #canvasContainer>.stage-hud [class*="border-"],#canvasContainer>.stage-progress [class*="border-"]{border-color:rgba(245,241,232,.22)!important;}
+ #canvasContainer>.stage-progress>.w-full{background:rgba(245,241,232,.13)!important;}
+ #canvasContainer>.stage-hud #hudColorSwatch{border-color:rgba(245,241,232,.32)!important;}
+ /* Only the two existing stage toolbar controls inherit the HUD skin. */
+ #canvasContainer .canvas-tools [data-panel-toggle],#canvasContainer .canvas-tools [data-fullscreen-toggle]{background:rgba(14,21,38,.64)!important;color:#F5F1E8!important;border:1px solid rgba(245,241,232,.28)!important;border-radius:9px;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);box-shadow:0 3px 12px rgba(0,0,0,.10)!important;}
+ #canvasContainer .canvas-tools [data-panel-toggle]:hover,#canvasContainer .canvas-tools [data-fullscreen-toggle]:hover{background:rgba(14,21,38,.70)!important;color:#F5F1E8!important;border-color:rgba(245,241,232,.34)!important;}
+ /* Local photo controls only: existing stage and paper layout are untouched. */
+ #canvasContainer [data-photo-entry]{pointer-events:auto;margin:7px 0 10px;}
+ #canvasContainer [data-photo-import],#canvasContainer [data-photo-dialog] button{background:rgba(14,21,38,.64)!important;color:#F5F1E8!important;border:1px solid rgba(245,241,232,.28)!important;border-radius:9px;backdrop-filter:blur(9px);-webkit-backdrop-filter:blur(9px);box-shadow:0 3px 12px rgba(0,0,0,.10)!important;font:11px/1.5 var(--mono);}
+ #canvasContainer [data-photo-import]{min-height:27px;padding:0 10px;}
+ #canvasContainer [data-photo-import]:hover,#canvasContainer [data-photo-dialog] button:hover{background:rgba(46,90,172,.70)!important;border-color:rgba(245,241,232,.4)!important;}
+ #canvasContainer [data-photo-entry-error]{display:block;margin-top:5px;color:#F5F1E8;font:10px/1.5 var(--sans);}
+ #canvasContainer [data-photo-dialog]{width:min(420px,calc(100vw - 28px));max-height:calc(100dvh - 28px);box-sizing:border-box;margin:auto;padding:20px;overflow:auto;border:1px solid rgba(245,241,232,.28);border-radius:9px;background:rgba(14,21,38,.97);color:#F5F1E8;box-shadow:0 8px 32px rgba(0,0,0,.18);}
+ #canvasContainer [data-photo-dialog]::backdrop{background:rgba(14,21,38,.64);backdrop-filter:blur(4px);}
+ .photo-dialog-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;}.photo-dialog-heading h2{margin:0;font:600 17px/1.5 var(--sans);}.photo-dialog-heading button{font-size:10px!important;}
+ [data-photo-name]{display:block;margin:8px 0 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;opacity:.62;font:10px/1.5 var(--mono);}
+ [data-photo-preview]{display:block;width:auto;max-width:100%;height:min(37dvh,300px);aspect-ratio:4/5;margin:0 auto 16px;border:1px solid rgba(245,241,232,.2);background:#F4F1EA;}
+ .photo-strength-label{display:flex;align-items:center;justify-content:space-between;font:12px/1.5 var(--sans);}.photo-strength-label output{font:12px/1.5 var(--mono);}
+ #canvasContainer [data-photo-strength]{display:block;width:100%;margin:12px 0 8px;}
+ [data-photo-status]{min-height:38px;margin:12px 0 14px;font:11px/1.7 var(--sans);color:rgba(245,241,232,.70);}
+ .photo-dialog-actions{display:flex;justify-content:flex-end;gap:8px;}#canvasContainer [data-photo-confirm]{background:#1E3F7A!important;}.photo-dialog-actions button:disabled{opacity:.4;cursor:wait;}
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- 顶部导航与串口状态栏 -->
+<header class="cloth-header">
+  <div class="cloth-header-top">
+    <div class="title-lock">
+      <div class="title-lock-copy">
+        <div class="modern-title-row">
+          <h1>青出于蓝</h1><span class="title-divider" aria-hidden="true"></span><span class="english-title">SHANDONG INDIGO</span>
+        </div>
+        <p class="english-micro-label">BLUE CALICO · BOTANICAL DYEING · 3D INTERACTIVE TERMINAL</p>
+      </div>
+    </div>
+    <div class="header-tools">
+      <div class="serial-cluster">
+        <div id="serialBadge" class="serial-status">
+          
+          <span id="serialText">未连接 ESP32 (虚拟调试中)</span>
+        </div>
+        <div class="connect-control"><span id="serialDot" class="serial-dot"></span><button id="connectSerialBtn" onclick="connectESP32()" class="quiet-connect">连接 ESP32 串口</button></div>
+      </div>
+      <div class="header-restart"><button type="button" onclick="resetAll()">重头玩</button></div>
+    </div>
+  </div>
+  <nav id="stageNav" aria-label="五段印染工艺导视">
+    <button onclick="jumpToStage(0)" data-stage="0" class="stage-tab bg-indigo-600"><span class="station-number">01</span><span class="station-name">选版刮浆</span><span class="station-status" aria-hidden="true"></span></button>
+    <button onclick="jumpToStage(1)" data-stage="1" class="stage-tab"><span class="station-number">02</span><span class="station-name">下缸浸染</span><span class="station-status" aria-hidden="true"></span></button>
+    <button onclick="jumpToStage(2)" data-stage="2" class="stage-tab"><span class="station-number">03</span><span class="station-name">起缸发色</span><span class="station-status" aria-hidden="true"></span></button>
+    <button onclick="jumpToStage(3)" data-stage="3" class="stage-tab"><span class="station-number">04</span><span class="station-name">复染决策</span><span class="station-status" aria-hidden="true"></span></button>
+    <button onclick="jumpToStage(4)" data-stage="4" class="stage-tab"><span class="station-number">05</span><span class="station-name">除浆导出</span><span class="station-status" aria-hidden="true"></span></button>
+  </nav>
+</header>
+
+<!-- 全局智能引导横幅 -->
+<!-- 主工作区 -->
+<main class="workshop-layout panel-collapsed flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 p-5 max-w-[1600px] w-full mx-auto">
+
+  <!-- 左侧：3D 流体织物多视角渲染视窗 (8列) -->
+  <section class="lg:col-span-12 flex flex-col gap-4">
+    <div class="relative rounded-lg overflow-hidden border border-slate-800 bg-slate-950 h-[550px]" id="canvasContainer">
+      <div id="threeCanvas" class="w-full h-full"></div>
+      <div id="guideBanner" class="process-chip" role="status" aria-live="polite" data-ready="false" data-final="false">
+        <span class="chip-dot" aria-hidden="true"></span><span id="guideTitle">转动旋钮，往复刮浆（还差 6 遍）</span>
+      </div>
+
+<div class="completion-reset" data-completion-reset hidden><span>本块布已归档</span><button type="button" data-new-cloth onclick="resetAll()">再来一块布</button></div>
+      <div data-fullscreen-workbench></div>
+      <div class="canvas-tools">
+        <button type="button" data-panel-toggle aria-expanded="false" onclick="toggleWorkshopPanel()">工作台</button>
+        <button type="button" data-fullscreen-toggle onclick="toggleWorkshopFullscreen()">全屏</button>
+      </div>
+      <div data-view-notice role="status" hidden></div>
+
+      <input type="file" accept="image/*" data-photo-file hidden>
+      <dialog data-photo-dialog aria-label="本地照片印花预览">
+        <div class="photo-dialog-heading"><h2>照片印花预览</h2><button type="button" data-photo-replace>换一张照片</button></div>
+        <span data-photo-name></span>
+        <canvas width="512" height="640" data-photo-preview role="img" aria-label="简化后的蓝白印花预览"></canvas>
+        <div class="photo-strength-label"><span>简化程度</span><output data-photo-value>50%</output></div><input type="range" min="0" max="100" value="50" step="1" data-photo-strength aria-label="简化程度">
+        <p data-photo-status role="status" aria-live="polite">照片仅在本机处理，不会上传。</p>
+        <div class="photo-dialog-actions"><button type="button" data-photo-cancel>取消</button><button type="button" data-photo-confirm disabled>确认使用</button></div>
+      </dialog>
+      <!-- 左上角：非遗色阶与三维视角浮层 -->
+      <div class="stage-hud absolute top-4 left-4 bg-slate-950/80 backdrop-blur-md border border-slate-800 rounded-lg p-3.5 w-64 pointer-events-none">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs text-slate-400">当前花版纹样</span>
+          <span id="hudPatternName" class="text-xs font-bold text-indigo-300">连年有余</span>
+        </div>
+        <div data-photo-entry><button type="button" data-photo-import>导入照片</button><span data-photo-entry-error role="status" hidden></span></div>
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs text-slate-400">复染浸次</span>
+          <span id="hudDyeRound" class="text-xs font-bold text-indigo-300">第 1 浸 (初染)</span>
+        </div>
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs text-slate-400">盒盖状态</span>
+          <span id="hudLidState" class="text-xs font-bold text-emerald-400">☀️ 已掀开 (见氧)</span>
+        </div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-slate-400">布匹观察角度</span>
+          <span id="hudAngleText" class="text-xs font-mono text-amber-300">水平 0° · 俯仰 0°</span>
+        </div>
+        <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
+          <span class="text-xs text-slate-400">实时布面色相</span>
+          <div class="flex items-center gap-2">
+            <span id="hudColorSwatch" class="w-4 h-4 rounded border border-white/30" style="background:#f4f1ea;"></span>
+            <span id="hudColorName" class="text-xs font-bold text-white">原白棉坯</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右上角：最低标准 vs 个性化深染进度条 -->
+      <div class="stage-progress absolute top-4 right-4 bg-slate-950/80 backdrop-blur-md border border-slate-800 rounded-lg p-3.5 w-64 pointer-events-none">
+        <div class="flex justify-between text-xs mb-1.5">
+          <span class="text-slate-300 font-medium" id="progressLabel">平均浆层厚度</span>
+          <span class="font-mono font-bold text-indigo-400" id="progressPercent">0%</span>
+        </div>
+        <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden relative">
+          <div id="passMark" class="absolute top-0 bottom-0 w-0.5 bg-amber-400 z-10" style="left: 100%;" title="最低及格标准"></div>
+          <div id="progressBarFill" class="h-full transition-all duration-150" style="width: 0%;"></div>
+        </div>
+        <div class="flex justify-between text-[10px] text-slate-400 mt-1.5">
+          <span>起始</span>
+          <span data-progress-legend class="text-amber-400">完整扫满全宽，六次往复刮满</span>
+        </div>
+        <div data-paste-status class="text-[11px] text-slate-300 mt-2">浆层状态：薄 · 刮满：0%</div>
+      </div>
+
+    </div>
+
+    <!-- 导出成品展示区（阶段4冲浆后自动显现） -->
+    <div id="certificatePanel" class="hidden rounded-lg border border-indigo-500/40 bg-slate-900/90 p-5 flex flex-col md:flex-row items-center gap-6">
+      <canvas id="exportCanvas" width="420" height="540" class="w-48 h-auto rounded-lg border border-slate-700 bg-[#f7f4eb]"></canvas>
+      <div class="flex-1 space-y-3">
+        <div class="inline-block px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-300 text-xs font-bold">✨ 专属非遗数字印染标本已生成</div>
+        <h3 id="certTitle" class="text-xl font-bold serif-title text-white">齐鲁非遗蓝印花布 · 霁蓝珍品</h3>
+        <p class="text-xs text-slate-300 leading-relaxed">
+          本作品完全依据您的物理操作时长与翻布节奏实时演算生成，保留了独特的手作冰裂防染纹理与天然靛蓝氧化色阶。
+        </p>
+        <div class="grid grid-cols-3 gap-2 pt-2">
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+            <div class="text-[10px] text-slate-400">专属色号 (HEX)</div>
+            <div id="certHex" class="text-xs font-mono font-bold text-indigo-400 mt-0.5">#1E3F7A</div>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+            <div class="text-[10px] text-slate-400">累计浸染 / 氧化</div>
+            <div id="certTime" class="text-xs font-mono font-bold text-indigo-300 mt-0.5">1浸 · 12.5s</div>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+            <div class="text-[10px] text-slate-400">档案唯一编号</div>
+            <div id="certId" class="text-xs font-mono font-bold text-amber-400 mt-0.5">SD-2026-8841</div>
+          </div>
+        </div>
+        <div class="pt-2 flex flex-wrap items-center gap-3">
+          <button onclick="downloadCertificate()" class="px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs cursor-pointer">
+            💾 保存高清非遗作品图 (PNG)
+          </button>
+          <span class="text-xs text-slate-400">或按下实体【黄帽按键2】直接导出</span>
+          
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 右侧：实体硬件输入映射与摇杆多角度控制面板 (4列) -->
+  <aside inert aria-hidden="true" class="lg:col-span-4 flex flex-col gap-3.5">
+    <div class="workbench-heading"><span class="micro-label">WORKBENCH</span><button type="button" onclick="toggleWorkshopPanel()">收起</button></div>
+    <div class="compat-bindings" hidden aria-hidden="true">    <div class="workshop-snapshot"><span id="guideBadge" class="px-2.5 py-1 rounded bg-indigo-500/20 border border-indigo-400/40 text-indigo-300 text-xs font-bold">步骤 0 / 4</span>
+<div id="guideSub" class="text-xs text-slate-300 mt-0.5">往复多刮几遍，浆层越厚，花纹边缘越清晰；刮满后合盖入缸</div>
+<div id="metricReadout" class="text-sm font-mono font-bold text-amber-400">平均浆层厚度: 0.0%</div></div>
+
+</div>
+    <!-- 1. 双轴摇杆多视角观察模块 -->
+    <div id="cardJoy" class="bg-slate-900 border border-indigo-500/40 rounded-lg p-4 transition-all">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span class="text-base">🕹️</span>
+          <h2 class="text-sm font-bold text-white">多视角观布摇杆 (IO32 / IO33 / IO25)</h2>
+        </div>
+        <span id="rawJoyBadge" class="px-2 py-0.5 rounded bg-slate-950 border border-slate-700 font-mono text-[11px] text-indigo-300">X:2048 Y:2048</span>
+      </div>
+      <p class="text-xs text-slate-400 mb-3">
+        拨动摇杆可 360° 旋转、俯仰侧视染布细节与防染浆凹凸质感；垂直按下摇杆帽（或点下方按钮）一键回正。
+      </p>
+      <div class="grid grid-cols-2 gap-3 items-center">
+        <div class="space-y-2">
+          <div>
+            <div class="flex justify-between text-[11px] text-slate-400">
+              <span>左右偏航 (VRx)</span>
+              <span id="yawDegLabel" class="font-mono text-white">0°</span>
+            </div>
+            <input type="range" id="simJoyXSlider" min="0" max="4095" value="2048" oninput="handleSimJoy(this.value, null)" class="w-full">
+          </div>
+          <div>
+            <div class="flex justify-between text-[11px] text-slate-400">
+              <span>上下俯仰 (VRy)</span>
+              <span id="pitchDegLabel" class="font-mono text-white">0°</span>
+            </div>
+            <input type="range" id="simJoyYSlider" min="0" max="4095" value="2048" oninput="handleSimJoy(null, this.value)" class="w-full">
+          </div>
+        </div>
+        <div class="flex flex-col items-center justify-center bg-slate-950 rounded-lg p-2.5 border border-slate-800">
+          <div class="w-16 h-16 rounded-full border border-slate-700 relative flex items-center justify-center bg-slate-900">
+            <div class="w-full h-[1px] bg-slate-800 absolute"></div>
+            <div class="h-full w-[1px] bg-slate-800 absolute"></div>
+            <div id="joyDot" class="w-3.5 h-3.5 rounded-full bg-indigo-400 transition-transform duration-75"></div>
+          </div>
+          <button onclick="resetCameraView()" class="mt-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-200 cursor-pointer">
+            🎯 按下回正 (SW)
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 盒内光敏电阻 -->
+    <div id="cardLight" class="bg-slate-900 border border-slate-800 rounded-lg p-4 transition-all">
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <span class="text-base">📦</span>
+          <h2 class="text-sm font-bold text-white">暗盒开合 (光敏电阻 IO34)</h2>
+        </div>
+        <span id="rawLightBadge" class="px-2 py-0.5 rounded bg-slate-950 border border-slate-700 font-mono text-xs text-indigo-400">读数: 2400</span>
+      </div>
+
+      <div class="bg-slate-950/90 border border-slate-800 rounded-lg p-2.5 mb-2.5 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-amber-300">分界线: <b id="threshValLabel">1000</b></span>
+          <button onclick="autoCalibrateLight()" class="px-2.5 py-1 rounded bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 text-[11px] font-bold cursor-pointer">
+            🎯 自动适配当前光照
+          </button>
+        </div>
+        <input type="range" id="lightThreshSlider" min="100" max="3500" value="1000" oninput="updateThreshold(this.value)" class="w-full">
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <button data-lid-action="close" onclick="setSimLid(false)" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 cursor-pointer">
+          🌑 合上盒盖 (入缸暗)
+        </button>
+        <button data-lid-action="open" onclick="setSimLid(true)" class="py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 cursor-pointer">
+          ☀️ 掀开盒盖 (出缸亮)
+        </button>
+      </div>
+    </div>
+
+    <!-- 3. 电位器旋钮 -->
+    <div id="cardPot" class="bg-slate-900 border border-slate-800 rounded-lg p-4 transition-all">
+      <div class="flex items-center justify-between mb-1.5">
+        <div class="flex items-center gap-2">
+          <span class="text-base">🎛️</span>
+          <h2 class="text-sm font-bold text-white">刮浆/翻布旋钮 (电位器 IO35)</h2>
+        </div>
+        <span id="rawPotBadge" class="px-2 py-0.5 rounded bg-slate-950 border border-slate-700 font-mono text-xs text-indigo-400">读数: 0</span>
+      </div>
+      <input type="range" id="simPotSlider" min="0" max="4095" value="0" oninput="handleSimPot(this.value)" class="w-full">
+    </div>
+
+    <!-- 4. 蓝黄双物理按键 -->
+    <div class="grid grid-cols-2 gap-3">
+      <div class="physical-key"><button id="btn1Card" onclick="triggerBtn1()" class="physical-key-button">蓝帽按键 1 · IO14</button><p class="key-caption">切换花版 / 导出后重置</p></div>
+
+      <div class="physical-key"><button id="btn2Card" onclick="triggerBtn2()" class="physical-key-button">黄帽按键 2 · IO27</button><p class="key-caption">确认除浆 / 导出作品图</p></div>
+    </div>
+
+    <!-- 5. 实时串口原始报文监视窗 -->
+    <div class="bg-slate-950 border border-slate-800 rounded-lg p-3 flex-1 flex flex-col min-h-[105px]">
+      <div class="flex items-center justify-between mb-1">
+        <span class="text-[11px] font-bold text-slate-400">📡 串口流 (光敏,旋钮,键1,键2,摇杆X,Y,SW)</span>
+      </div>
+      <div id="serialLog" class="font-mono text-[11px] text-emerald-400/90 overflow-y-auto flex-1 space-y-0.5 max-h-[90px]">
+        <div class="text-slate-500">等待连接硬件或操作虚拟控件...</div>
+      </div>
+    </div>
+
+        <!-- 底部操作提示条 -->
+      <div class="workshop-keyhelp flex flex-wrap items-center justify-between gap-2 bg-slate-950/85 backdrop-blur border border-slate-800/90 rounded-lg px-4 py-2.5">
+        <div class="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+          <span class="text-indigo-400 font-bold">🕹️ 视角与调试：</span>
+          <span>拨动<b class="text-white">摇杆</b>或键盘 <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">WASD</kbd> 旋转布匹</span>
+          <span>·</span>
+          <span>按摇杆或 <kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">R</kbd> 回正视角</span>
+          <span>·</span>
+          <span><kbd class="px-1.5 py-0.5 bg-slate-800 rounded border border-slate-700">空格</kbd> 开关盒</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="resetCameraView()" class="text-xs text-indigo-400 hover:text-indigo-300 underline cursor-pointer">回正视角</button>
+          <button onclick="resetAll()" class="text-xs text-slate-400 hover:text-white underline cursor-pointer">全部重置</button>
+        </div>
+      </div>
+
+</aside>
+</main>
+
+<script>
+// ==================== 全局状态与配置 ====================
+const PATTERNS = [
+  { id: 0, name: "连年有余" },
+  { id: 1, name: "喜鹊登梅" },
+  { id: 2, name: "榴开百子" },
+  { id: 3, name: "牡丹富贵" },
+  { id: 4, name: "莲生贵子" },
+  { id: 5, name: "蝶恋花" },
+  { id: 6, name: "葡萄" }
+];
+
+const AppState = {
+  stage: 0,
+  patternIdx: 0,
+  pasteProgress: 0,
+  soakSeconds: 0,
+  oxidizeSeconds: 0,
+  dyeRounds: 1,
+  agitationEnergy: 0,
+
+  // 传感器状态
+  lightVal: 2400,
+  lightThreshold: 1000,
+  isLidOpen: true,
+  potVal: 0,
+  lastPotVal: 0,
+  prevBtn1: 0,
+  prevBtn2: 0,
+  prevJoySw: 0,
+
+  // 摇杆多角度观察状态 (弧度)
+  joyX: 2048,
+  joyY: 2048,
+  targetYaw: 0,
+  targetPitch: 0,
+  currentYaw: 0,
+  currentPitch: 0,
+
+  isExported: false,
+  finalRgb: { r: 30, g: 63, b: 122 },
+  finalHex: "#1E3F7A",
+  colorTitle: "原白棉坯",
+  specimenId: "SD-2026-0000",
+  colorSeed: Math.floor(Math.random()*0xFFFFFF)
+};
+
+let spotlightTimer = null;
+
+// ==================== 双轴摇杆多视角控制逻辑 ====================
+function handleJoystickInput(xVal, yVal, swVal) {
+  if (xVal !== null && !isNaN(xVal)) {
+    AppState.joyX = xVal;
+    document.getElementById('simJoyXSlider').value = xVal;
+  }
+  if (yVal !== null && !isNaN(yVal)) {
+    AppState.joyY = yVal;
+    document.getElementById('simJoyYSlider').value = yVal;
+  }
+
+  document.getElementById('rawJoyBadge').textContent = `X:${AppState.joyX} Y:${AppState.joyY}`;
+
+  const normX = (AppState.joyX - 2048) / 2048;
+  const normY = (AppState.joyY - 2048) / 2048;
+
+  if (Math.abs(normX) > 0.14) {
+    AppState.targetYaw = Math.max(-2.85, Math.min(2.85, AppState.targetYaw + normX * 0.055));
+  }
+  if (Math.abs(normY) > 0.14) {
+    AppState.targetPitch = Math.max(-1.05, Math.min(1.05, AppState.targetPitch + normY * 0.04));
+  }
+
+  const dot = document.getElementById('joyDot');
+  if (dot) {
+    dot.style.transform = `translate(${normX * 22}px, ${normY * 22}px)`;
+  }
+
+  if (swVal === 1 && AppState.prevJoySw === 0) {
+    resetCameraView();
+  }
+  AppState.prevJoySw = swVal || 0;
+}
+
+function handleSimJoy(x, y) {
+  if (x !== null) {
+    const val = parseInt(x, 10);
+    AppState.joyX = val;
+    AppState.targetYaw = ((val - 2048) / 2048) * 2.8;
+  }
+  if (y !== null) {
+    const val = parseInt(y, 10);
+    AppState.joyY = val;
+    AppState.targetPitch = ((val - 2048) / 2048) * 1.0;
+  }
+  document.getElementById('rawJoyBadge').textContent = `X:${AppState.joyX} Y:${AppState.joyY}`;
+  const normX = (AppState.joyX - 2048) / 2048;
+  const normY = (AppState.joyY - 2048) / 2048;
+  document.getElementById('joyDot').style.transform = `translate(${normX * 22}px, ${normY * 22}px)`;
+}
+
+function resetCameraView() {
+  AppState.targetYaw = 0;
+  AppState.targetPitch = 0;
+  AppState.joyX = 2048;
+  AppState.joyY = 2048;
+  document.getElementById('simJoyXSlider').value = 2048;
+  document.getElementById('simJoyYSlider').value = 2048;
+  document.getElementById('joyDot').style.transform = `translate(0px, 0px)`;
+  document.getElementById('rawJoyBadge').textContent = `X:2048 Y:2048`;
+}
+
+// ==================== 光敏阈值校准与盒盖检测 ====================
+function updateThreshold(val) {
+  AppState.lightThreshold = parseInt(val, 10);
+  document.getElementById('threshValLabel').textContent = AppState.lightThreshold;
+  evaluateLidState(AppState.lightVal);
+}
+
+function autoCalibrateLight() {
+  const newThresh = Math.max(120, Math.round(AppState.lightVal * 0.55));
+  document.getElementById('lightThreshSlider').value = newThresh;
+  updateThreshold(newThresh);
+  appendLog(`[校准] 开/关盒分界线设为 ${newThresh}`);
+}
+
+function evaluateLidState(lightReading) {
+  AppState.lightVal = lightReading;
+  document.getElementById('rawLightBadge').textContent = `读数: ${lightReading}`;
+
+  const nowOpen = lightReading >= AppState.lightThreshold;
+  if (nowOpen !== AppState.isLidOpen) {
+    AppState.isLidOpen = nowOpen;
+    onLidStateChanged(nowOpen);
+  }
+  const hudLid = document.getElementById('hudLidState');
+  if (AppState.isLidOpen) {
+    hudLid.textContent = "☀️ 已掀开 (见氧)";
+    hudLid.className = "text-xs font-bold text-emerald-400";
+  } else {
+    hudLid.textContent = "🌑 已合盖 (入缸暗)";
+    hudLid.className = "text-xs font-bold text-amber-400";
+  }
+}
+
+function onLidStateChanged(isOpen) {
+  advanceOxidationDecision();
+  if (!isOpen) {
+    if (AppState.stage === 0 && AppState.pasteProgress >= 100) {
+      jumpToStage(1);
+    } else if (AppState.stage === 2 && AppState.oxidizeSeconds >= 10) {
+      AppState.dyeRounds++;
+      AppState.soakSeconds = 0;
+      jumpToStage(1);
+    } else if (AppState.stage === 3) {
+      AppState.dyeRounds++;
+      AppState.soakSeconds = 0;
+      jumpToStage(1);
+    }
+  } else {
+    if (AppState.stage === 1 && AppState.soakSeconds >= 6) {
+      jumpToStage(2);
+    }
+  }
+}
+
+// ==================== 电位器与按键处理 ====================
+function handlePotInput(newPot) {
+  const delta = Math.abs(newPot - AppState.lastPotVal);
+  AppState.potVal = newPot;
+  document.getElementById('rawPotBadge').textContent = `读数: ${newPot}`;
+  document.getElementById('simPotSlider').value = newPot;
+
+  if (delta > 15) {
+    AppState.agitationEnergy += delta * 0.001;
+    targetScraperX = ((newPot / 4095) - 0.5) * 2.2;
+
+    if (AppState.stage === 0) {
+      const wasComplete = AppState.pasteProgress >= 100;
+      applyPasteStroke(AppState.lastPotVal, newPot);
+      if (!wasComplete && AppState.pasteProgress >= 100) {
+        document.getElementById('guideTitle').textContent = '浆已刮满！请合上盒盖入缸';
+        clearAllSpotlights();
+        triggerSpotlight('cardLight');
+        syncNextStepGuidance();
+      }
+    } else if (AppState.stage === 1 && !AppState.isLidOpen) {
+      AppState.soakSeconds += (delta / 4095) * 0.45;
+      clothWaveBoost = 1.8;
+    }
+  }
+  AppState.lastPotVal = newPot;
+}
+
+function triggerBtn1() {
+  clearAllSpotlights();
+  if (AppState.stage === 0) {
+    clearCustomPhotoSelection();
+    AppState.patternIdx = (AppState.patternIdx + 1) % PATTERNS.length;
+    document.getElementById('hudPatternName').textContent = PATTERNS[AppState.patternIdx].name;
+  } else if (AppState.stage === 4 && AppState.isExported) {
+    resetAll();
+  }
+}
+
+function triggerBtn2() {
+  clearAllSpotlights();
+  if (AppState.stage === 2 && AppState.oxidizeSeconds >= 10) {
+    // Show the two-way decision before accepting a subsequent yellow-key action.
+    jumpToStage(3);
+  } else if (AppState.stage === 3 && AppState.oxidizeSeconds >= 10) {
+    jumpToStage(4);
+  } else if (AppState.stage === 4) {
+    if (!AppState.isExported) {
+      generateAndExportCertificate();
+    } else {
+      downloadCertificate();
+    }
+  }
+}
+
+function jumpToStage(newStage) {
+  AppState.stage = newStage;
+  clearAllSpotlights();
+
+  document.querySelectorAll('.stage-tab').forEach(btn => {
+    const s = parseInt(btn.dataset.stage, 10);
+    btn.className = (s === newStage)
+      ? "stage-tab px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 text-white shadow"
+      : "stage-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-white";
+  });
+
+  document.getElementById('guideBadge').textContent = `步骤 ${newStage} / 4`;
+  document.getElementById('hudDyeRound').textContent = `第 ${AppState.dyeRounds} 浸`;
+
+  if (newStage === 0) {
+    document.getElementById('certificatePanel').classList.add('hidden');
+    document.getElementById('guideTitle').textContent = "👉 请按【蓝帽按键1】选花版，并往复转动【旋钮】刮涂防染浆";
+    document.getElementById('guideSub').textContent = "拨动【摇杆】可随时从侧面观察刮浆浮雕厚度；刮满后合上暗盒盖即可入缸。往复多刮几遍，浆层越厚，花纹边缘越清晰";
+    triggerSpotlight('btn1Card');
+  } else if (newStage === 1) {
+    document.getElementById('guideTitle').textContent = "🌑 已入发酵染缸！保持合盖浸泡，转动【旋钮】匀速翻布";
+    document.getElementById('guideSub').textContent = "浸泡满 6 秒及格线后即可掀盖出缸";
+    triggerSpotlight('cardPot');
+  } else if (newStage === 2) {
+    document.getElementById('guideTitle').textContent = "☀️ 出缸接触氧气！保持盒盖敞开，观察靛蓝层层氧化深化";
+    document.getElementById('guideSub').textContent = "10秒达基础湖蓝；拨动【摇杆】可多角度欣赏色泽变化，满意后按【黄帽按键2】除浆";
+  } else if (newStage === 3) {
+    document.getElementById('guideTitle').textContent = "🎨 发色已稳定！合盖可开启【第 " + (AppState.dyeRounds + 1) + " 浸】深染，或按【黄帽按键2】除浆";
+    document.getElementById('guideSub').textContent = "一浸清丽湖蓝，二浸醇厚群青，三浸深邃霁蓝";
+    triggerSpotlight('btn2Card');
+  } else if (newStage === 4) {
+    AppState.isExported = false;
+    document.getElementById('guideTitle').textContent = "🌊 清溪水洗已冲净浮浆！拨动【摇杆】欣赏正反面成色，按【黄帽按键2】导出";
+    document.getElementById('guideSub').textContent = "导出后将生成您的专属色阶与手作冰裂纹档案";
+    triggerSpotlight('btn2Card');
+    renderCertificatePreview();
+    document.getElementById('certificatePanel').classList.remove('hidden');
+  }
+  syncNextStepGuidance();
+  syncPhotoImportUI();
+}
+
+function triggerSpotlight(elId) {
+  clearAllSpotlights();
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.classList.add('spotlight-active');
+  spotlightTimer = setTimeout(() => el.classList.remove('spotlight-active'), 2400);
+}
+
+function clearAllSpotlights() {
+  if (spotlightTimer) clearTimeout(spotlightTimer);
+  document.querySelectorAll('.spotlight-active').forEach(el => el.classList.remove('spotlight-active'));
+}
+
+// ==================== 浓郁天然靛蓝色彩演算 ====================
+function clothSeedSignature(seed){return [((seed>>>16)&255)/255*10-5,((seed>>>8)&255)/255*14-7,(seed&255)/255*20-10].map(Math.round).join(',');}
+function computeCurrentClothColor() {
+  if(AppState.stage===0){AppState.colorTitle='原白棉坯';return{r:244,g:241,b:234};}
+  if(AppState.stage===1){AppState.colorTitle='染缸隐色体 · 黄绿';return{r:170,g:190,b:100};}
+  const t=Math.min(1,AppState.oxidizeSeconds/10);
+  const u=t*t*(3-2*t);
+  const start=[170,190,100];
+  const round=AppState.dyeRounds-1;
+  const seed=AppState.colorSeed;
+  const tint=[((seed>>>16)&255)/255*10-5,((seed>>>8)&255)/255*14-7,(seed&255)/255*20-10];
+  const finish=[Math.max(12,30-round*4),Math.max(30,63-round*7),Math.max(72,122-round*12)].map((v,i)=>v+tint[i]);
+  const deep=Math.min(1,Math.max(0,AppState.oxidizeSeconds-10)/28);
+  const dark=[9+tint[0]*.3,22+tint[1]*.5,68+tint[2]*.6];
+  const values=start.map((v,i)=>(v+(finish[i]-v)*u)*(1-deep)+dark[i]*deep);
+  AppState.colorTitle=t<.3?'隐色黄绿 · 初见氧':t<.7?'缥色 · 渐次发蓝':deep>.65?'玄青 · 古墨深靛':'霁蓝 · 齐鲁正蓝';
+  return{r:Math.round(values[0]),g:Math.round(values[1]),b:Math.round(values[2])};
+}
+function dyeColorAtRow(rowFraction){
+  const p=Math.min(1,AppState.soakSeconds/6);
+  const worldY=1.5-rowFraction*3-clothImmersion;
+  const submerged=Math.max(0,Math.min(1,(vatLiquidY-worldY+.04)/.10));
+  const front=Math.max(0,Math.min(1,(rowFraction-(1-p)+.12*p)/.12));
+  const amount=submerged*front;
+  const base=AppState.dyeRounds>1?[30,63,122]:[244,241,234];
+  return base.map((v,i)=>Math.round(v+([170,190,100][i]-v)*amount));
+}
+
+
+// ==================== Three.js 3D 柔性织物与多角度旋转组 ====================
+let scene, camera, renderer, clothPivot, clothMesh, scraperMesh, vatWaterMesh;
+let clothTopFold,clothStageShadow;
+let fabricSurfaceCache=null;
+let woodSurfaceCache=null;
+let clothGeo, clothBasePos;
+let targetScraperX = 0;
+let clothWaveBoost = 0;
+let scraperTilt = 0;
+let scraperContactShadow;
+let clothImmersion=0;
+const reducedMotionMedia=window.matchMedia('(prefers-reduced-motion: reduce)');
+let motionReduced=reducedMotionMedia.matches;
+let lastMotionStage=-1,stageMotionStarted=-Infinity;
+function stageMotionLift(now){
+  if(lastMotionStage!==AppState.stage){
+    stageMotionStarted=lastMotionStage<0||motionReduced?-Infinity:now;lastMotionStage=AppState.stage;
+    const station=document.querySelector('.stage-tab.bg-indigo-600');
+    if(station){station.classList.remove('station-transition');void station.offsetWidth;station.classList.add('station-transition');}
+  }
+  const age=(now-stageMotionStarted)/1000;
+  return motionReduced||age<0||age>.3?0:.022*Math.sin(Math.PI*age/.3);
+}
+function initMotionPreferences(){
+  reducedMotionMedia.addEventListener('change',event=>{
+    motionReduced=event.matches;stageMotionStarted=-Infinity;
+    clothDynamics.x=clothDynamics.y=clothDynamics.vx=clothDynamics.vy=0;
+    if(typeof mouseSurface!=='undefined'){mouseSurface.ripples=[];mouseSurface.reveal=0;}
+  });
+}
+const clothDynamics={x:0,y:0,vx:0,vy:0};
+function updateClothDynamics(dt){
+  const normalize=v=>{const n=Math.max(-1,Math.min(1,(v-2048)/2048));return Math.abs(n)<.04?0:n;};
+  const targetX=normalize(AppState.joyX),targetY=normalize(AppState.joyY);
+  const steps=Math.max(1,Math.ceil(dt/.016)),h=dt/steps;
+  for(let i=0;i<steps;i++)for(const [axis,velocity,target]of [['x','vx',targetX],['y','vy',targetY]]){
+    // Underdamped spring: momentum survives release, then decays smoothly.
+    clothDynamics[velocity]+=(18*(target-clothDynamics[axis])-4.5*clothDynamics[velocity])*h;
+    clothDynamics[axis]+=clothDynamics[velocity]*h;
+  }
+}
+const mouseSurface={hover:false,reveal:0,lastRippleAt:-Infinity,ripples:[]};
+let clothRaycaster,mousePointer,lastMouseHit=null;
+const hoverStencil=document.createElement('canvas');hoverStencil.width=512;hoverStencil.height=640;
+const hoverCtx=hoverStencil.getContext('2d');let hoverStencilKey='';
+function mouseInteractionAllowed(){return AppState.stage===0||AppState.stage===2;}
+function updateMouseSurface(dt,now){
+  if(!mouseInteractionAllowed()||motionReduced){mouseSurface.hover=false;mouseSurface.reveal=0;mouseSurface.ripples=[];return;}
+  mouseSurface.reveal=mouseSurface.hover?Math.min(1,mouseSurface.reveal+dt/.18):Math.max(0,mouseSurface.reveal-dt/.4);
+  mouseSurface.ripples=mouseSurface.ripples.filter(r=>now-r.time<600);
+}
+function mouseRippleAt(x,y,now){
+  if(!mouseInteractionAllowed()||motionReduced)return 0;
+  let result=0;
+  for(const ripple of mouseSurface.ripples){
+    const age=(now-ripple.time)/1000;if(age<0||age>.6)continue;
+    const distance=Math.hypot(x-ripple.x,y-ripple.y),ring=distance-(.015+age*.65);
+    result+=Math.sin(ring*45)*Math.exp(-Math.pow(ring/.065,2))*.012*Math.pow(1-age/.6,2);
+  }
+  return result;
+}
+function initMouseSurface(){
+  const container=document.getElementById('canvasContainer');
+  clothRaycaster=new THREE.Raycaster();mousePointer=new THREE.Vector2();
+  container.addEventListener('pointermove',event=>{
+    if(!mouseInteractionAllowed()||motionReduced||event.target.closest('button,input,aside')){mouseSurface.hover=false;return;}
+    const rect=renderer.domElement.getBoundingClientRect();
+    mousePointer.set((event.clientX-rect.left)/rect.width*2-1,-(event.clientY-rect.top)/rect.height*2+1);
+    clothPivot.updateMatrixWorld(true);clothRaycaster.setFromCamera(mousePointer,camera);
+    const hit=clothRaycaster.intersectObject(clothMesh,false)[0];
+    mouseSurface.hover=!!hit;if(!hit){lastMouseHit=null;return;}
+    const point=clothMesh.worldToLocal(hit.point.clone());const now=performance.now();
+    if(now-mouseSurface.lastRippleAt>=40&&(!lastMouseHit||Math.hypot(point.x-lastMouseHit.x,point.y-lastMouseHit.y)>.015)){
+      mouseSurface.ripples.push({x:point.x,y:point.y,time:now});
+      if(mouseSurface.ripples.length>8)mouseSurface.ripples.shift();
+      mouseSurface.lastRippleAt=now;lastMouseHit={x:point.x,y:point.y};
+    }
+  });
+  container.addEventListener('pointerleave',()=>{mouseSurface.hover=false;lastMouseHit=null;});
+}
+function drawHoverMotif(ctx,w,h){
+  if(!mouseInteractionAllowed()||mouseSurface.reveal<=.001||motionReduced)return;
+  const key=AppState.patternIdx+':'+AppState.stage;
+  if(hoverStencilKey!==key){
+    hoverCtx.clearRect(0,0,512,640);hoverCtx.fillStyle=AppState.stage===0?'#A88E68':'#F4F1EA';hoverCtx.strokeStyle=hoverCtx.fillStyle;
+    drawTraditionalMotif(hoverCtx,256,320,AppState.patternIdx);
+    const image=hoverCtx.getImageData(0,0,512,640),data=image.data,bg=AppState.finalRgb;
+    for(let i=0;i<data.length;i+=4)if(data[i]===bg.r&&data[i+1]===bg.g&&data[i+2]===bg.b)data[i+3]=0;
+    hoverCtx.putImageData(image,0,0);hoverStencilKey=key;
+  }
+  ctx.save();ctx.globalAlpha=.25*mouseSurface.reveal;ctx.drawImage(hoverStencil,0,0,w,h);ctx.restore();
+}
+const clothDisplacementLimit=2.4*.02;
+function clampClothVertex(x,y,proposed){
+  const pin=Math.max(0,Math.min(1,(1.5-y)/3));
+  let dx=proposed.x-x,dy=proposed.y-y,dz=proposed.z;
+  const limit=clothDisplacementLimit*Math.pow(pin,1.5);
+  if(AppState.stage===0){
+    // Both neighbouring grid columns are pinned, so the interpolated contact is flat too.
+    const distance=Math.abs(x-targetScraperX);
+    const free=Math.max(0,Math.min(1,(distance-.11)/.06));dx*=free;dy*=free;dz*=free;
+  }
+  dz=Math.max(0,dz); // Stay on the front side of the hanging plane.
+  const length=Math.hypot(dx,dy,dz),scale=length>limit?limit/length:1;
+  return{x:x+dx*scale,y:y+dy*scale,z:dz*scale};
+}
+function clothVertexMotion(x,y,time){
+  if(motionReduced)return{x,y,z:0};
+  const pin=Math.max(0,(1.5-y)/3),weight=pin*pin;
+  const energy=Math.hypot(clothDynamics.x,clothDynamics.y)+.08*Math.hypot(clothDynamics.vx,clothDynamics.vy);
+  return{
+    x:x+clothDynamics.x*.28*weight,
+    y:y+clothDynamics.y*.14*weight,
+    z:(clothDynamics.x*(x/1.2)*.36+clothDynamics.y*.34)*weight
+      +Math.sin(x*2.8+y*1.6-time*3.5-clothDynamics.x*2)*energy*.15*pin
+  };
+}
+const vatSurfaceY=-1.91;
+let vatLiquidY=vatSurfaceY;
+let vatGroup,vatSwirl,dyeCloud,vatBubbles=[],vatSceneStage=-1,vatEntryArmed=false,dyeCloudAt=-Infinity;
+let cameraFollowY=0;
+let cameraShotKey='',cameraShotStarted=-Infinity,cameraShotFromDistance=0,cameraShotComplete=false;
+let vatAppearance=0,vatCanReveal=false,vatSolidMaterials=[];
+let vatWallMaterials=[],vatWallFade=0;
+let vatRipples=[],vatRim;
+let lastResistPattern=-1;
+const resistStencil=document.createElement('canvas');resistStencil.width=512;resistStencil.height=640;
+const resistCtx=resistStencil.getContext('2d');
+// One density and last-wet timestamp per full-height textile column (512 x 640).
+const pasteColumns = new Float32Array(512);
+const pasteWetAt = new Float64Array(512).fill(-Infinity);
+let lastPasteStrokeAt = null;
+const pasteLayer = document.createElement('canvas');
+pasteLayer.width = 512; pasteLayer.height = 640;
+const pasteLayerCtx = pasteLayer.getContext('2d');
+const pasteCoverageThreshold = 0.8;
+// Maximum contribution per column in the current directional pass, independent of sample count.
+const pastePassDose = new Float32Array(512);
+let pastePassDirection = 0;
+const pasteLegCoats = new Uint8Array(512);
+const pasteLegVisited = new Float32Array(512);
+let pasteLegAnchor = null;
+let pasteCompleteLegs = 0;
+function pasteEndpoint(pot) { return pot <= 82 ? 0 : pot >= 4013 ? 1 : null; }
+function pasteColor(thickness) {
+  const t = Math.max(0, Math.min(1, thickness));
+  const a = t <= .5 ? [232,224,208] : [235,225,205];
+  const b = t <= .5 ? [235,225,205] : [215,195,160];
+  const k = t <= .5 ? t * 2 : (t - .5) * 2;
+  return a.map((v,i) => v + (b[i]-v)*k);
+}
+
+function applyPasteStroke(previousPot, currentPot) {
+  const now = performance.now();
+  const start = pasteEndpoint(previousPot), end = pasteEndpoint(currentPot);
+  if (pasteLegAnchor === null && start !== null) pasteLegAnchor = start;
+  const toColumn = pot => ((((pot / 4095) - 0.5) * 2.2 + 1.2) / 2.4) * 512;
+  const from=toColumn(previousPot), to=toColumn(currentPot);
+  const left=Math.min(previousPot,currentPot)<=82 ? 0 : Math.min(from,to);
+  const right=Math.max(previousPot,currentPot)>=4013 ? 512 : Math.max(from,to);
+  for(let x=0;x<512;x++){
+    const d=Math.max(left-(x+.5),(x+.5)-right,0);
+    if(d<20){
+      const feather=1-Math.max(0,(d/20-.7)/.3);
+      pasteLegVisited[x]=Math.max(pasteLegVisited[x],feather);
+      // Local rubbing is capped at one pending coat until a full traverse is proved.
+      pasteColumns[x]=Math.max(pasteColumns[x],Math.min(1,(pasteLegCoats[x]+pasteLegVisited[x])/12));
+      pasteWetAt[x]=now;
+    }
+  }
+  if(pasteLegAnchor===null && end!==null){pasteLegAnchor=end;pasteLegVisited.fill(0);}
+  else if(end!==null && end!==pasteLegAnchor && pasteLegVisited.every(v=>v>=.99)){
+    for(let x=0;x<512;x++){
+      pasteLegCoats[x]=Math.min(12,pasteLegCoats[x]+1);
+      pasteColumns[x]=Math.max(pasteColumns[x],pasteLegCoats[x]/12);
+    }
+    pasteCompleteLegs=Math.min(12,pasteCompleteLegs+1);
+    pasteLegAnchor=end;pasteLegVisited.fill(0);
+  }
+  // Twelve validated full-width legs = six round trips. No local-rubbing score.
+  const dose=pasteLegCoats.reduce((sum,v)=>sum+Math.min(12,v),0);
+  AppState.pasteProgress=dose===512*12 ? 100 : dose/(512*12)*100;
+  scraperTilt=Math.sign(currentPot-previousPot)*.16;
+  clothWaveBoost=Math.max(clothWaveBoost,.18);
+  lastPasteStrokeAt=now;
+}
+
+function drawLocalPaste(ctx, w, h) {
+  const now = performance.now();
+  const image = pasteLayerCtx.createImageData(512, 640);
+  const data = image.data;
+  for (let x = 0; x < 512; x++) {
+    const thickness = pasteColumns[x];
+    if (!thickness) continue;
+    const wet = Math.max(0, 1 - (now - pasteWetAt[x]) / 2000);
+    const edge = thickness - pasteColumns[Math.max(0, x - 1)];
+    const color = pasteColor(thickness);
+    // Column-constant shading is calculated once, not 640 times per frame.
+    const age = Math.max(0, now - pasteWetAt[x]);
+    const trail = Math.max(0, 1 - age / 1000);
+    const sheen = wet * (1 + 2 * Math.pow(Math.max(0, Math.sin(x * .12)), 8))
+      + trail * (2 + 3 * Math.pow(Math.max(0, Math.cos(x * .20)), 12));
+    const relief = Math.max(-18, Math.min(18, edge * (35 + thickness * 100)));
+    const filmOpacity = .65 * (1 - Math.exp(-thickness / .025)) + .35 * thickness;
+    for (let y = 0; y < 640; y++) {
+      const i = (y * 512 + x) * 4;
+      data[i] = color[0] + sheen - relief;
+      data[i+1] = color[1] + sheen - relief;
+      data[i+2] = color[2] + sheen - relief;
+      // Visibility curve affects rendering only, never thickness or coverage.
+      // A thin coat is already legible, while tiny feather-edge doses stay soft.
+      data[i+3] = Math.round(filmOpacity * 255);
+    }
+  }
+  pasteLayerCtx.putImageData(image, 0, 0);
+  ctx.drawImage(pasteLayer, 0, 0, w, h);
+
+  // Render the motif separately and clip its alpha by the physical film density.
+  pasteLayerCtx.clearRect(0, 0, 512, 640);
+  pasteLayerCtx.fillStyle = '#B5976B';
+  pasteLayerCtx.strokeStyle = '#B5976B';
+  drawTraditionalMotif(pasteLayerCtx, 256, 320, AppState.patternIdx);
+  const motif = pasteLayerCtx.getImageData(0, 0, 512, 640);
+  for (let x = 0; x < 512; x++) {
+    const thickness = pasteColumns[x];
+    const wet = Math.max(0, 1 - (now - pasteWetAt[x]) / 2000);
+    const color = pasteColor(thickness);
+    for (let y = 0; y < 640; y++) {
+      const i = (y * 512 + x) * 4;
+      // Keep motif cutouts intact (e.g. the 寿 character).
+      if (motif.data[i+3] && motif.data[i] === AppState.finalRgb.r && motif.data[i+1] === AppState.finalRgb.g && motif.data[i+2] === AppState.finalRgb.b) {
+        motif.data[i+3] = 0; continue;
+      }
+      // Subtle engraved pigment contrast keeps a linear, thin motif visible.
+      motif.data[i] = color[0] - (1 - thickness) * 32 + wet * 2;
+      motif.data[i+1] = color[1] - (1 - thickness) * 40 + wet * 2;
+      motif.data[i+2] = color[2] - (1 - thickness) * 48 + wet * 2;
+      motif.data[i+3] *= thickness;
+    }
+  }
+  pasteLayerCtx.putImageData(motif, 0, 0);
+  ctx.save();
+  const meanThickness = pasteColumns.reduce((sum,v) => sum+v,0) / 512;
+  ctx.shadowColor = 'rgba(65,43,23,' + (.15 + meanThickness * .65) + ')';
+  ctx.shadowBlur = .5 + meanThickness * 2;
+  ctx.shadowOffsetX = .3 + meanThickness;
+  ctx.shadowOffsetY = .5 + meanThickness * 2;
+  ctx.drawImage(pasteLayer, 0, 0, w, h);
+  ctx.restore();
+}
+
+function makeVatDisc(){
+  const radius=1.44,rings=18,segments=96,positions=[0,0,0],indices=[];
+  for(let ring=1;ring<=rings;ring++)for(let i=0;i<segments;i++){const a=i*Math.PI*2/segments,r=radius*ring/rings;positions.push(Math.cos(a)*r,Math.sin(a)*r,0);}
+  for(let i=0;i<segments;i++)indices.push(0,1+i,1+(i+1)%segments);
+  for(let ring=2;ring<=rings;ring++)for(let i=0;i<segments;i++){
+    const next=(i+1)%segments,a=1+(ring-2)*segments+i,b=1+(ring-1)*segments+i,c=1+(ring-1)*segments+next,d=1+(ring-2)*segments+next;
+    indices.push(a,b,d,b,c,d);
+  }
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
+}
+function ensureFabricSurface(){
+  if(fabricSurfaceCache)return fabricSurfaceCache;
+  const shade=document.createElement('canvas'),lift=document.createElement('canvas');shade.width=lift.width=512;shade.height=lift.height=640;
+  const sc=shade.getContext('2d'),lc=lift.getContext('2d'),dark=sc.createImageData(512,640),light=lc.createImageData(512,640);
+  for(let y=0;y<640;y++)for(let x=0;x<512;x++){
+    const u=x/511,v=y/639,index=(y*512+x)*4;
+    const folds=[[-.072,.235,.050],[-.085,.515,.070],[-.058,.785,.052]];
+    let tone=(.5-u)*.045;
+    for(let k=0;k<folds.length;k++){
+      const[a,c,width]=folds[k],center=c+.009*Math.sin(v*4+k)*v;
+      tone+=a*Math.exp(-Math.pow((u-center)/width,2))*(.55+.45*v);
+      tone+=.021*Math.exp(-Math.pow((u-center+.047)/(width*.65),2));
+    }
+    tone-=.035*(Math.exp(-u/.035)+Math.exp(-(1-u)/.035));
+    const hash=((x*73856093)^(y*19349663))>>>0,grain=((hash&255)/255-.5)*.005;
+    const warp=Math.cos(x*Math.PI/2),weft=Math.cos(y*Math.PI/2),over=((x>>2)+(y>>2))%2;
+    tone+=(over?warp*.007+weft*.003:weft*.007+warp*.003)+grain;
+    dark.data[index]=dark.data[index+1]=dark.data[index+2]=0;dark.data[index+3]=Math.round(Math.min(.13,Math.max(0,-tone))*255);
+    light.data[index]=light.data[index+1]=light.data[index+2]=255;light.data[index+3]=Math.round(Math.min(.025,Math.max(0,tone))*255);
+  }
+  sc.putImageData(dark,0,0);lc.putImageData(light,0,0);
+  const bump=document.createElement('canvas');bump.width=bump.height=128;const bc=bump.getContext('2d'),image=bc.createImageData(128,128);
+  for(let y=0;y<128;y++)for(let x=0;x<128;x++){
+    const i=(y*128+x)*4,warp=Math.cos(x*Math.PI/2),weft=Math.cos(y*Math.PI/2),over=((x>>2)+(y>>2))%2;
+    const value=128+(over?warp*13+weft*4:weft*13+warp*4)+(((x*31+y*17)%11)-5)*.4;
+    image.data[i]=image.data[i+1]=image.data[i+2]=value;image.data[i+3]=255;
+  }
+  bc.putImageData(image,0,0);const bumpMap=new THREE.CanvasTexture(bump);bumpMap.wrapS=bumpMap.wrapT=THREE.RepeatWrapping;bumpMap.repeat.set(12,15);
+  if(renderer&&renderer.capabilities)bumpMap.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+  const rough=document.createElement('canvas');rough.width=rough.height=128;const rc=rough.getContext('2d'),roughImage=rc.createImageData(128,128);
+  for(let y=0;y<128;y++)for(let x=0;x<128;x++){
+    const i=(y*128+x)*4,value=246+Math.sin(x/13)*Math.sin(y/17)*2.5+(((x*19+y*43)%17)-8)*.35+Math.cos(x*Math.PI/2)*1.6+Math.cos(y*Math.PI/2)*.8;
+    roughImage.data[i]=roughImage.data[i+1]=roughImage.data[i+2]=value;roughImage.data[i+3]=255;
+  }
+  rc.putImageData(roughImage,0,0);const roughnessMap=new THREE.CanvasTexture(rough);roughnessMap.wrapS=roughnessMap.wrapT=THREE.RepeatWrapping;roughnessMap.repeat.set(12,15);
+  if(renderer&&renderer.capabilities)roughnessMap.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());
+  fabricSurfaceCache={shade,lift,bumpMap,roughnessMap};return fabricSurfaceCache;
+}
+function drawFabricSurface(ctx,w,h){
+  const surface=ensureFabricSurface();ctx.save();ctx.globalCompositeOperation='multiply';ctx.drawImage(surface.shade,0,0,w,h);ctx.globalCompositeOperation='screen';ctx.drawImage(surface.lift,0,0,w,h);ctx.restore();
+}
+function fabricDrape(x,y){
+  const pin=Math.max(0,Math.min(1,(1.5-y)/3)),across=Math.max(0,1-Math.pow(x/1.2,2));
+  return{y:-.014*across*Math.pow(pin,8),z:(.008+.008*Math.cos(x*7+.3))*Math.pow(pin,1.5)};
+}
+function createFabricTopFold(material){
+  const positions=[],uv=[],indices=[],segments=20,r=.064;
+  for(let i=0;i<=segments;i++)for(let side=0;side<2;side++){
+    const a=i/segments*Math.PI*.68;positions.push(side?1.2:-1.2,1.55-r*Math.cos(a),r*Math.sin(a));uv.push(side,1-i/segments*.018);
+  }
+  for(let i=0;i<segments;i++){const a=i*2;indices.push(a,a+1,a+2,a+1,a+3,a+2);}
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeVertexNormals();
+  const hemMaterial=material.clone();hemMaterial.polygonOffset=true;hemMaterial.polygonOffsetFactor=-1;hemMaterial.polygonOffsetUnits=-1;
+  const hem=new THREE.Mesh(geometry,hemMaterial);hem.renderOrder=1;return hem;
+}
+function ensureWoodSurface(){
+  if(woodSurfaceCache)return woodSurfaceCache;
+  const makeCanvas=(w,h)=>{const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;return canvas;};
+  const mapCanvas=makeCanvas(256,1024),bumpCanvas=makeCanvas(256,1024),roughCanvas=makeCanvas(256,1024);
+  const mc=mapCanvas.getContext('2d'),bc=bumpCanvas.getContext('2d'),rc=roughCanvas.getContext('2d');
+  const colour=mc.createImageData(256,1024),height=bc.createImageData(256,1024),rough=rc.createImageData(256,1024);
+  for(let y=0;y<1024;y++)for(let x=0;x<256;x++){
+    const u=x/255,v=y/1023,i=(y*256+x)*4;
+    let warp=x+Math.sin(v*9+u*5)*5+Math.sin(v*23)*1.4,knot=0;
+    for(const [ku,kv]of [[.28,.27],[.72,.76]]){
+      const dx=(u-ku)/.105,dy=(v-kv)/.040,r=Math.hypot(dx,dy),envelope=Math.exp(-r*r*.42);
+      warp+=dx*envelope*10;knot+=envelope*(Math.sin(r*15)*8-12*Math.exp(-r*r*3));
+    }
+    const band=Math.sin(u*21+Math.sin(v*2)*.7)*7+Math.sin(u*43-v*1.5)*3;
+    const fibres=Math.sin(warp*.9+Math.sin(v*17))*.5+Math.sin(warp*2.9+v*7)*.22;
+    const noise=(((x*31+y*17)%19)-9)/9;
+    const tone=225+band+fibres*9+knot+noise*1.3;
+    colour.data[i]=tone+7;colour.data[i+1]=tone;colour.data[i+2]=tone-12;colour.data[i+3]=255;
+    const grey=128+fibres*15+band*.45+knot*.75; height.data[i]=height.data[i+1]=height.data[i+2]=grey;height.data[i+3]=255;
+    const grit=245+noise*3-fibres*3-Math.min(4,Math.abs(knot)*.1);rough.data[i]=rough.data[i+1]=rough.data[i+2]=grit;rough.data[i+3]=255;
+  }
+  mc.putImageData(colour,0,0);bc.putImageData(height,0,0);rc.putImageData(rough,0,0);
+  const endCanvas=makeCanvas(256,256),endBumpCanvas=makeCanvas(256,256),ec=endCanvas.getContext('2d'),ebc=endBumpCanvas.getContext('2d'),endImage=ec.createImageData(256,256),endHeight=ebc.createImageData(256,256);
+  for(let y=0;y<256;y++)for(let x=0;x<256;x++){
+    const i=(y*256+x)*4,dx=(x-115)/128,dy=(y-138)/128,r=Math.hypot(dx*.93,dy*1.06),angle=Math.atan2(dy,dx);
+    const ring=Math.sin(r*70+Math.sin(angle*4)*1.5),pore=(((x*37+y*23)%17)-8)*.25,value=218+ring*6+pore;
+    endImage.data[i]=value+6;endImage.data[i+1]=value;endImage.data[i+2]=value-13;endImage.data[i+3]=255;
+    endHeight.data[i]=endHeight.data[i+1]=endHeight.data[i+2]=128+ring*10+pore;endHeight.data[i+3]=255;
+  }
+  ec.putImageData(endImage,0,0);ebc.putImageData(endHeight,0,0);
+  const texture=canvas=>{const map=new THREE.CanvasTexture(canvas);if(renderer&&renderer.capabilities)map.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());return map;};
+  woodSurfaceCache={map:texture(mapCanvas),bumpMap:texture(bumpCanvas),roughnessMap:texture(roughCanvas),endMap:texture(endCanvas),endBumpMap:texture(endBumpCanvas)};return woodSurfaceCache;
+}
+function createWoodTexture(){return ensureWoodSurface().map;}
+function createWoodMaterial(colour,bumpScale=.009,end=false){
+  const wood=ensureWoodSurface();
+  return new THREE.MeshStandardMaterial({color:colour,map:end?wood.endMap:wood.map,bumpMap:end?wood.endBumpMap:wood.bumpMap,roughnessMap:wood.roughnessMap,bumpScale,roughness:.78,metalness:0});
+}
+function createClothStageShadow(){
+  const canvas=document.createElement('canvas');canvas.width=128;canvas.height=160;const ctx=canvas.getContext('2d'),image=ctx.createImageData(128,160);
+  for(let y=0;y<160;y++)for(let x=0;x<128;x++){const u=Math.abs((x-63.5)/63.5),v=Math.abs((y-79.5)/79.5),a=Math.exp(-Math.pow(Math.max(0,u-.72)/.16,2)-Math.pow(Math.max(0,v-.78)/.14,2));image.data[(y*128+x)*4+3]=Math.round(a*42);}
+  ctx.putImageData(image,0,0);const shadow=new THREE.Mesh(new THREE.PlaneGeometry(2.5,3.06),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,opacity:.60,depthWrite:false,side:THREE.DoubleSide}));
+  shadow.position.set(.045,-.035,-.14);shadow.renderOrder=-1;return shadow;
+}
+function initThreeScene() {
+  const container = document.getElementById('threeCanvas');
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0E1526);
+
+  camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 100);
+  camera.position.set(0,.6,6.6);camera.lookAt(0,-.65,0);
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.localClippingEnabled=true;
+  renderer.setSize(w, h);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.52);
+  scene.add(ambientLight);
+
+  const keyLight = new THREE.DirectionalLight(0xfff4df, 0.80);
+  keyLight.position.set(-3.5, 4.5, 5);
+  scene.add(keyLight);
+
+  const rimLight = new THREE.DirectionalLight(0xdbe7f2, 0.18);
+  rimLight.position.set(3.5, 1.1, 4.5);
+  scene.add(rimLight);
+
+  clothPivot = new THREE.Group();
+  scene.add(clothPivot);
+
+  const poleGeo = new THREE.CylinderGeometry(0.06, 0.06, 2.50, 24);
+  poleGeo.rotateZ(Math.PI / 2);
+  const poleMat=createWoodMaterial(0xc89d66,.008);
+  const pole = new THREE.Mesh(poleGeo, poleMat);
+  pole.position.set(0, 1.55, 0);
+  clothPivot.add(pole);
+  const poleEndMaterial=createWoodMaterial(0xb18b5a,.006,true);
+  for(const x of [-1.25,1.25]){const cap=new THREE.Mesh(new THREE.SphereGeometry(.06,16,12),poleEndMaterial);cap.position.x=x;pole.add(cap);}
+
+  clothGeo = new THREE.PlaneGeometry(2.4, 3.0, 36, 44);
+  clothBasePos = Float32Array.from(clothGeo.attributes.position.array);
+  clothGeo.computeBoundingSphere();clothGeo.boundingSphere.radius+=clothDisplacementLimit;
+
+  const clothTex = createPatternCanvasTexture();
+  const clothMat = new THREE.MeshStandardMaterial({
+    map: clothTex,
+    color:0xf2f2f2,
+    bumpMap:ensureFabricSurface().bumpMap,bumpScale:.024,
+    roughnessMap:ensureFabricSurface().roughnessMap,
+    roughness: .95,
+    metalness: 0,
+    side: THREE.DoubleSide
+  });
+
+  clothMesh = new THREE.Mesh(clothGeo, clothMat);
+  clothMesh.position.set(0, -0.01, 0);
+  clothMesh.renderOrder=1;
+  clothPivot.add(clothMesh);
+  clothTopFold=createFabricTopFold(clothMat);clothPivot.add(clothTopFold);
+  clothStageShadow=createClothStageShadow();clothPivot.add(clothStageShadow);
+
+  scraperMesh = new THREE.Group();
+  const blade = new THREE.Mesh(
+    new THREE.BoxGeometry(0.083, 2.82, 0.012),
+    createWoodMaterial(0x795635,.010)
+  );
+  scraperMesh.add(blade);
+  const lip = new THREE.Mesh(
+    new THREE.BoxGeometry(0.023, 2.82, 0.009),
+    createWoodMaterial(0x9b7952,.008)
+  );
+  lip.position.set(-0.028, 0, -0.006); scraperMesh.add(lip);
+  const handle = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.035, 0.035, 0.36, 16),
+    createWoodMaterial(0x795635,.009)
+  );
+  handle.position.set(0,1.43,.13); scraperMesh.add(handle);
+  const neck=new THREE.Mesh(new THREE.BoxGeometry(.045,.20,.12),blade.material);
+  neck.position.set(0,1.31,.06);scraperMesh.add(neck);
+  scraperMesh.position.set(0,-.01,.02);
+  scraperMesh.renderOrder=4;
+  scraperMesh.traverse(node=>{if(node.isMesh){node.renderOrder=4;node.material.depthTest=false;node.material.depthWrite=false;node.material.transparent=true;node.material.opacity=1;}});
+  clothPivot.add(scraperMesh);
+  const shadowCanvas = document.createElement('canvas');
+  shadowCanvas.width = 64; shadowCanvas.height = 16;
+  const shadowCtx = shadowCanvas.getContext('2d');
+  const shadowGradient = shadowCtx.createLinearGradient(0,0,64,0);
+  shadowGradient.addColorStop(0,'rgba(35,24,14,0)');
+  shadowGradient.addColorStop(.5,'rgba(35,24,14,.32)');
+  shadowGradient.addColorStop(1,'rgba(35,24,14,0)');
+  shadowCtx.fillStyle = shadowGradient; shadowCtx.fillRect(0,0,64,16);
+  scraperContactShadow = new THREE.Mesh(new THREE.PlaneGeometry(.16,2.82),
+    new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false,side:THREE.DoubleSide}));
+  scraperContactShadow.position.set(0,-.01,.002);
+  scraperContactShadow.renderOrder=3;scraperContactShadow.material.depthTest=false;
+  clothPivot.add(scraperContactShadow);
+
+  // Permanent glazed vat: open wall, dark inner wall, floor and a thick lip.
+  vatGroup=new THREE.Group();vatGroup.visible=false;scene.add(vatGroup);
+  const glaze=new THREE.MeshStandardMaterial({color:0x1E3F7A,roughness:.32,metalness:.14});
+  const wall=new THREE.Mesh(new THREE.CylinderGeometry(1.58,1.38,3.22,72,1,true),glaze);
+  wall.position.y=-3.39;vatGroup.add(wall);
+  const inner=new THREE.Mesh(new THREE.CylinderGeometry(1.47,1.27,3.15,72,1,true),new THREE.MeshStandardMaterial({color:0x1E3F7A,roughness:.6,side:THREE.BackSide}));
+  inner.position.y=-3.395;vatGroup.add(inner);
+  vatWallMaterials=[wall.material,inner.material];
+  vatWallMaterials.forEach(material=>{material.transparent=true;material.opacity=1;material.depthWrite=true;});
+  wall.renderOrder=10;inner.renderOrder=-2;
+  const solidGlaze=glaze.clone();vatSolidMaterials=[solidGlaze];
+  const floor=new THREE.Mesh(new THREE.CylinderGeometry(1.38,1.38,.09,72),solidGlaze);floor.position.y=-5.0;vatGroup.add(floor);
+  vatRim=new THREE.Mesh(new THREE.TorusGeometry(1.54,.07,16,96),new THREE.MeshStandardMaterial({color:0x2E5AAC,roughness:.25,metalness:.16}));
+  vatRim.rotation.x=Math.PI/2;vatRim.position.y=-1.78;vatGroup.add(vatRim);
+  vatRim.material.transparent=true;vatRim.renderOrder=12;
+  const foot=new THREE.Mesh(new THREE.TorusGeometry(1.33,.045,8,72),solidGlaze);foot.rotation.x=Math.PI/2;foot.position.y=-5.01;vatGroup.add(foot);
+  vatWaterMesh=new THREE.Mesh(makeVatDisc(),new THREE.MeshPhysicalMaterial({color:0x2E5AAC,transparent:true,opacity:.58,roughness:.22,metalness:.08,side:THREE.DoubleSide,depthWrite:false}));
+  vatWaterMesh.rotation.x=-Math.PI/2;vatWaterMesh.position.y=vatLiquidY;vatWaterMesh.renderOrder=1;scene.add(vatWaterMesh);
+  const spiral=[];for(let i=0;i<=160;i++){const t=i/160,r=.15+t*1.15,angle=t*Math.PI*4;spiral.push(new THREE.Vector3(Math.cos(angle)*r,Math.sin(angle)*r,0));}
+  vatSwirl=new THREE.Line(new THREE.BufferGeometry().setFromPoints(spiral),new THREE.LineBasicMaterial({color:0x6683AB,transparent:true,opacity:.1,depthWrite:false}));
+  vatSwirl.rotation.x=-Math.PI/2;vatSwirl.position.y=vatLiquidY+.01;vatSwirl.renderOrder=2;scene.add(vatSwirl);
+  const cloudCanvas=document.createElement('canvas');cloudCanvas.width=128;cloudCanvas.height=128;
+  const cloudCtx=cloudCanvas.getContext('2d'),gradient=cloudCtx.createRadialGradient(64,64,5,64,64,64);
+  gradient.addColorStop(0,'rgba(6,16,48,.95)');gradient.addColorStop(.4,'rgba(8,25,62,.65)');gradient.addColorStop(1,'rgba(8,25,62,0)');
+  cloudCtx.fillStyle=gradient;cloudCtx.fillRect(0,0,128,128);
+  dyeCloud=new THREE.Mesh(new THREE.PlaneGeometry(2,2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cloudCanvas),transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide}));
+  dyeCloud.rotation.x=-Math.PI/2;dyeCloud.renderOrder=3;dyeCloud.visible=false;scene.add(dyeCloud);
+  for(let i=0;i<7;i++){
+    const bubble=new THREE.Mesh(new THREE.SphereGeometry(.023+(i%3)*.007,12,8),new THREE.MeshPhysicalMaterial({color:0xAFC2DD,transparent:true,opacity:.34,roughness:.08,metalness:.1,depthWrite:false}));
+    bubble.visible=false;bubble.renderOrder=2;scene.add(bubble);vatBubbles.push(bubble);
+  }
+
+  window.addEventListener('resize', () => {
+    if (!container) return;
+    camera.aspect = container.clientWidth / container.clientHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(container.clientWidth, container.clientHeight);
+  });
+  updateVatAppearance(0);updateVatTransparency(0);updateCameraFollow(1);
+}
+
+const texCanvas = document.createElement('canvas');
+texCanvas.width = 512;
+texCanvas.height = 640;
+const texCtx = texCanvas.getContext('2d');
+let threeTexture = null;
+
+function createPatternCanvasTexture() {
+  drawClothToContext(texCtx, 512, 640, false);
+  threeTexture = new THREE.CanvasTexture(texCanvas);
+  return threeTexture;
+}
+
+function updatePasteTexture() {
+  if (!threeTexture) return;
+  drawClothToContext(texCtx, 512, 640, false);
+  threeTexture.needsUpdate = true;
+}
+
+function drawSubmergedResist(ctx,w,h){
+  // Cache a transparent resist stencil: negative cuts must reveal the row colour.
+  if(lastResistPattern!==AppState.patternIdx){
+    resistCtx.clearRect(0,0,512,640);resistCtx.fillStyle='#F4F1EA';resistCtx.strokeStyle='#F4F1EA';
+    drawTraditionalMotif(resistCtx,256,320,AppState.patternIdx);
+    const image=resistCtx.getImageData(0,0,512,640),data=image.data,ground=AppState.finalRgb;
+    for(let i=0;i<data.length;i+=4)if(data[i]===ground.r&&data[i+1]===ground.g&&data[i+2]===ground.b)data[i+3]=0;
+    resistCtx.putImageData(image,0,0);lastResistPattern=AppState.patternIdx;
+  }
+  ctx.save();ctx.globalAlpha=.95;ctx.drawImage(resistStencil,0,0,w,h);ctx.restore();
+}
+function drawClothToContext(ctx, w, h, isFinalClean) {
+  const rgb = computeCurrentClothColor();
+  AppState.finalRgb = rgb;
+  AppState.finalHex = `#${[rgb.r, rgb.g, rgb.b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase()}`;
+
+  if(AppState.stage===1 && !isFinalClean){
+    // Horizontal colour rows follow the physical waterline and advancing front.
+    for(let y=0;y<h;y+=2){const color=dyeColorAtRow(y/h);ctx.fillStyle='rgb('+color.join(',')+')';ctx.fillRect(0,y,w,2);}
+  }else{
+    ctx.fillStyle = `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`;
+    ctx.fillRect(0, 0, w, h);
+  }
+
+  // Preserve the existing exported specimen raster; stage fibres are composited last.
+  if(isFinalClean){
+  ctx.strokeStyle = "rgba(0,0,0,0.06)";
+  ctx.lineWidth = 1;
+  for (let x = 0; x < w; x += 6) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+  }
+  for (let y = 0; y < h; y += 6) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+  }
+
+  }
+
+  ctx.save();
+  const pasteRatio = isFinalClean ? 1 : (AppState.pasteProgress / 100);
+  if (AppState.stage === 0 && !isFinalClean) {
+    drawLocalPaste(ctx, w, h);
+  } else if(AppState.stage===1 && !isFinalClean){
+    drawSubmergedResist(ctx,w,h);
+  } else if (pasteRatio > 0.02) {
+    ctx.fillStyle = (AppState.stage === 4 || isFinalClean)
+      ? "rgba(248, 246, 240, 0.96)"
+      : `rgba(235, 232, 222, ${0.25 + pasteRatio * 0.7})`;
+    ctx.strokeStyle = ctx.fillStyle;
+    drawTraditionalMotif(ctx, w / 2, h / 2, AppState.patternIdx);
+  }
+  ctx.restore();
+
+  if (AppState.stage >= 2 && AppState.agitationEnergy > 0.5) {
+    ctx.strokeStyle = "rgba(245, 243, 235, 0.22)";
+    ctx.lineWidth = 1.2;
+    const crackCount = Math.min(28, Math.floor(AppState.agitationEnergy * 3));
+    for (let i = 0; i < crackCount; i++) {
+      const seed = (i * 97 + Math.floor(AppState.agitationEnergy * 13)) % 100;
+      const sx = (seed / 100) * w;
+      const sy = ((seed * 37) % 100 / 100) * h;
+      ctx.beginPath();
+      ctx.moveTo(sx, sy);
+      ctx.lineTo(sx + Math.sin(seed) * 35, sy + Math.cos(seed) * 45);
+      ctx.lineTo(sx + Math.cos(seed * 2) * 50, sy + Math.sin(seed * 2) * 65);
+      ctx.stroke();
+    }
+  }
+  if(!isFinalClean){drawPhotoRegistration(ctx,w,h);drawHoverMotif(ctx,w,h);drawFabricSurface(ctx,w,h);}
+}
+
+// Local photo print: original files never leave FileReader / in-memory canvases.
+const photoPrint={saved:null,draft:null,active:false,readVersion:0,previewFrame:null,tintCanvas:null,tintKey:'',revision:0,ui:null};
+function activePatternName(){return photoPrint.active&&photoPrint.saved?'自定义照片':PATTERNS[AppState.patternIdx].name;}
+function invalidatePhotoStencil(){photoPrint.tintKey='';hoverStencilKey='';lastResistPattern=-1;if(threeTexture)threeTexture.needsUpdate=true;}
+function clearCustomPhotoSelection(){if(photoPrint.active){photoPrint.active=false;invalidatePhotoStencil();}}
+function photoCropRect(width,height){
+  const ratio=512/640;
+  return width/height>ratio?{sx:(width-height*ratio)/2,sy:0,sw:height*ratio,sh:height}:{sx:0,sy:(height-width/ratio)/2,sw:width,sh:width/ratio};
+}
+function photoSourceFromImage(image,name){
+  const width=image.naturalWidth||image.width,height=image.naturalHeight||image.height;
+  if(!width||!height)throw new Error('图片没有可读取的尺寸，请换一张。');
+  const rect=photoCropRect(width,height),canvas=document.createElement('canvas');canvas.width=512;canvas.height=640;
+  const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,512,640);
+  ctx.drawImage(image,rect.sx,rect.sy,rect.sw,rect.sh,0,0,512,640);
+  const rgba=ctx.getImageData(0,0,512,640).data,gray=new Float32Array(512*640);
+  for(let i=0;i<gray.length;i++){const p=i*4,a=rgba[p+3]/255;gray[i]=(.2126*rgba[p]+.7152*rgba[p+1]+.0722*rgba[p+2])*a+255*(1-a);}
+  // Summed-area luminance makes continuous slider scrubbing independent of photo size.
+  const integral=new Float64Array(513*641);
+  for(let y=0;y<640;y++){let sum=0;for(let x=0;x<512;x++){sum+=gray[y*512+x];integral[(y+1)*513+x+1]=integral[y*513+x+1]+sum;}}
+  return{name,width:512,height:640,integral};
+}
+function photoBoxBlur(values,width,height,radius){
+  if(!radius)return Float32Array.from(values);
+  const horizontal=new Float32Array(values.length),out=new Float32Array(values.length);
+  for(let y=0;y<height;y++){
+    let sum=0;for(let x=0;x<=Math.min(radius,width-1);x++)sum+=values[y*width+x];
+    for(let x=0;x<width;x++){
+      if(x){if(x-radius-1>=0)sum-=values[y*width+x-radius-1];if(x+radius<width)sum+=values[y*width+x+radius];}
+      horizontal[y*width+x]=sum/(Math.min(width-1,x+radius)-Math.max(0,x-radius)+1);
+    }
+  }
+  for(let x=0;x<width;x++){
+    let sum=0;for(let y=0;y<=Math.min(radius,height-1);y++)sum+=horizontal[y*width+x];
+    for(let y=0;y<height;y++){
+      if(y){if(y-radius-1>=0)sum-=horizontal[(y-radius-1)*width+x];if(y+radius<height)sum+=horizontal[(y+radius)*width+x];}
+      out[y*width+x]=sum/(Math.min(height-1,y+radius)-Math.max(0,y-radius)+1);
+    }
+  }
+  return out;
+}
+function photoOtsuThreshold(values){
+  const histogram=new Uint32Array(256);let sum=0;
+  for(const v of values){const k=Math.max(0,Math.min(255,Math.round(v)));histogram[k]++;sum+=k;}
+  let weight=0,partial=0,best=-1,threshold=127;
+  for(let i=0;i<255;i++){
+    weight+=histogram[i];partial+=i*histogram[i];const other=values.length-weight;
+    if(!weight||!other)continue;
+    const difference=partial/weight-(sum-partial)/other,score=weight*other*difference*difference;
+    if(score>best){best=score;threshold=i;}
+  }
+  return threshold;
+}
+function photoRemoveSpecks(mask,width,height,minimum){
+  if(minimum<=1)return mask;
+  const out=Uint8Array.from(mask),visited=new Uint8Array(mask.length),queue=new Int32Array(mask.length);
+  for(let start=0;start<mask.length;start++){
+    if(visited[start])continue;
+    const tone=mask[start];let head=0,tail=1;queue[0]=start;visited[start]=1;
+    while(head<tail){
+      const p=queue[head++],x=p%width,y=Math.floor(p/width);
+      for(const q of [x? p-1:-1,x<width-1?p+1:-1,y?p-width:-1,y<height-1?p+width:-1])if(q>=0&&!visited[q]&&mask[q]===tone){visited[q]=1;queue[tail++]=q;}
+    }
+    if(tail<minimum)for(let i=0;i<tail;i++)out[queue[i]]=1-tone;
+  }
+  return out;
+}
+function simplifyPhotoPrint(source,strength){
+  const t=Math.max(0,Math.min(100,Number(strength)||0))/100,width=Math.round(256-192*t),height=Math.round(width*640/512);
+  const coarse=new Float32Array(width*height),table=source.integral;
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+    const x0=Math.floor(x*512/width),x1=Math.max(x0+1,Math.floor((x+1)*512/width));
+    const y0=Math.floor(y*640/height),y1=Math.max(y0+1,Math.floor((y+1)*640/height));
+    coarse[y*width+x]=(table[y1*513+x1]-table[y0*513+x1]-table[y1*513+x0]+table[y0*513+x0])/((x1-x0)*(y1-y0));
+  }
+  const radius=Math.round(t*2),blurred=photoBoxBlur(photoBoxBlur(coarse,width,height,radius),width,height,radius);
+  const threshold=photoOtsuThreshold(blurred),binary=new Uint8Array(blurred.length);
+  for(let i=0;i<binary.length;i++)binary[i]=blurred[i]>threshold?1:0;
+  const cleaned=photoRemoveSpecks(binary,width,height,Math.round(1+12*t*t)),light=new Uint8Array(512*640);
+  let whitePixels=0;
+  // Reconstruct with bilinear coverage, then re-threshold: smooth contour, exactly two tones.
+  for(let y=0;y<640;y++)for(let x=0;x<512;x++){
+    const fx=Math.max(0,Math.min(width-1,(x+.5)*width/512-.5)),fy=Math.max(0,Math.min(height-1,(y+.5)*height/640-.5));
+    const x0=Math.floor(fx),y0=Math.floor(fy),x1=Math.min(width-1,x0+1),y1=Math.min(height-1,y0+1),dx=fx-x0,dy=fy-y0;
+    const value=(cleaned[y0*width+x0]*(1-dx)+cleaned[y0*width+x1]*dx)*(1-dy)+(cleaned[y1*width+x0]*(1-dx)+cleaned[y1*width+x1]*dx)*dy;
+    light[y*512+x]=value>=.5?1:0;whitePixels+=light[y*512+x];
+  }
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=640;const ctx=canvas.getContext('2d'),image=ctx.createImageData(512,640);
+  for(let i=0;i<light.length;i++){const p=i*4;image.data[p]=image.data[p+1]=image.data[p+2]=255;image.data[p+3]=light[i]*255;}
+  ctx.putImageData(image,0,0);
+  return{mask:canvas,light,whiteFraction:whitePixels/light.length,width,height,threshold};
+}
+function photoPreviewDyeColor(){
+  // Project this cloth's eventual stable dye colour, restoring the live state synchronously.
+  // No transition handlers run; finally restores every property touched by the colour function.
+  const snapshot={stage:AppState.stage,oxidizeSeconds:AppState.oxidizeSeconds,colorTitle:AppState.colorTitle};
+  try{AppState.stage=4;AppState.oxidizeSeconds=10;return computeCurrentClothColor();}
+  finally{Object.assign(AppState,snapshot);}
+}
+function paintPhotoPreview(canvas,result){
+  canvas.width=512;canvas.height=640;const ctx=canvas.getContext('2d'),image=ctx.createImageData(512,640),dye=photoPreviewDyeColor(),paper=[244,241,234];
+  for(let i=0;i<result.light.length;i++){const p=i*4,colour=result.light[i]?paper:[dye.r,dye.g,dye.b];image.data[p]=colour[0];image.data[p+1]=colour[1];image.data[p+2]=colour[2];image.data[p+3]=255;}
+  ctx.putImageData(image,0,0);
+}
+function buildPhotoRegistration(result){
+  const canvas=document.createElement('canvas');canvas.width=512;canvas.height=640;const ctx=canvas.getContext('2d'),image=ctx.createImageData(512,640),dye=photoPreviewDyeColor();
+  for(let i=0;i<result.light.length;i++){const p=i*4;image.data[p]=dye.r;image.data[p+1]=dye.g;image.data[p+2]=dye.b;image.data[p+3]=result.light[i]?0:255;}
+  ctx.putImageData(image,0,0);return canvas;
+}
+function drawCustomPhotoMotif(ctx,cx,cy){
+  if(!photoPrint.saved)return;
+  const ink=ctx.fillStyle,key=photoPrint.revision+':'+ink;
+  if(photoPrint.tintKey!==key){
+    const canvas=photoPrint.tintCanvas||(photoPrint.tintCanvas=document.createElement('canvas'));canvas.width=512;canvas.height=640;
+    const tint=canvas.getContext('2d');tint.clearRect(0,0,512,640);tint.drawImage(photoPrint.saved.result.mask,0,0);
+    tint.globalCompositeOperation='source-in';tint.fillStyle=ink;tint.fillRect(0,0,512,640);tint.globalCompositeOperation='source-over';photoPrint.tintKey=key;
+  }
+  ctx.drawImage(photoPrint.tintCanvas,0,0,cx*2,cy*2);
+}
+function drawPhotoRegistration(ctx,w,h){
+  if(AppState.stage!==0||!photoPrint.active||!photoPrint.saved)return;
+  // Only a pale positioning proof before paste: it never contributes to the physical film or progress.
+  const average=pasteColumns.reduce((sum,v)=>sum+v,0)/pasteColumns.length;
+  ctx.save();ctx.globalAlpha=.12*(1-average);ctx.drawImage(photoPrint.saved.registration,0,0,w,h);ctx.restore();
+}
+function photoImportError(message){
+  const ui=photoPrint.ui;if(!ui)return;
+  if(ui.dialog.open)ui.status.textContent=message;
+  else{ui.error.textContent=message;ui.error.hidden=false;}
+  ui.confirm.disabled=!photoPrint.draft||!photoPrint.draft.result||!photoPrint.draft.usable||photoPrint.previewFrame!==null;
+}
+function syncPhotoImportUI(){
+  const ui=photoPrint.ui;if(!ui)return;ui.entry.hidden=AppState.stage!==0;
+  if(AppState.stage!==0)cancelPhotoDraft();
+}
+function cancelPhotoDraft(){
+  photoPrint.readVersion++;if(photoPrint.previewFrame!==null){cancelAnimationFrame(photoPrint.previewFrame);photoPrint.previewFrame=null;}
+  photoPrint.draft=null;const ui=photoPrint.ui;if(ui&&ui.dialog.open)ui.dialog.close();
+}
+function updatePhotoDraftPreview(){
+  const draft=photoPrint.draft,ui=photoPrint.ui;if(!draft||!ui||AppState.stage!==0)return;
+  try{
+    const result=simplifyPhotoPrint(draft.source,draft.strength);draft.result=result;paintPhotoPreview(ui.preview,result);
+    ui.value.textContent=Math.round(draft.strength)+'%';
+    const sparse=result.whiteFraction<.015||result.whiteFraction>.985;
+    draft.usable=!sparse;ui.confirm.disabled=sparse;
+    ui.status.textContent=sparse?'这张图的明暗层次太少，请换一张对比更清楚的照片。':'浅色留白浆，深色随布入染；确认后仍需完成六次往复刮浆。';
+  }catch(error){draft.result=null;draft.usable=false;ui.confirm.disabled=true;photoImportError('处理失败，请换一张照片重试。');}
+}
+function showPhotoDraft(source,strength=50){
+  if(AppState.stage!==0)return;
+  const ui=photoPrint.ui;photoPrint.draft={source,strength,result:null,usable:false};ui.strength.value=strength;ui.name.textContent=source.name;ui.confirm.disabled=true;ui.error.hidden=true;
+  if(!ui.dialog.open)ui.dialog.showModal();updatePhotoDraftPreview();
+}
+function choosePhotoFile(){if(AppState.stage!==0)return;const input=photoPrint.ui.file;input.value='';input.click();}
+function openPhotoImporter(){
+  if(AppState.stage!==0)return;
+  if(photoPrint.saved)showPhotoDraft(photoPrint.saved.source,photoPrint.saved.strength);else choosePhotoFile();
+}
+function readLocalPhoto(file){
+  if(!file||AppState.stage!==0)return;
+  if(file.type&&!file.type.startsWith('image/')){photoImportError('请选择图片文件。');return;}
+  const version=++photoPrint.readVersion,reader=new FileReader(),ui=photoPrint.ui;
+  if(ui.dialog.open){ui.confirm.disabled=true;ui.status.textContent='正在本机处理照片…';}
+  const current=()=>version===photoPrint.readVersion&&AppState.stage===0;
+  reader.onerror=()=>{if(current())photoImportError('无法读取这张图片，请重新选择。');};
+  reader.onload=()=>{
+    if(!current())return;const image=new Image();
+    image.onerror=()=>{if(current())photoImportError('浏览器无法打开这种图片，请换用 JPG、PNG 或 WebP。');};
+    image.onload=()=>{if(!current())return;try{showPhotoDraft(photoSourceFromImage(image,file.name),50);}catch(error){photoImportError(error.message||'图片处理失败，请重新选择。');}};
+    image.src=reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+function confirmPhotoDraft(){
+  const draft=photoPrint.draft;if(AppState.stage!==0||!draft||!draft.result||!draft.usable||photoPrint.previewFrame!==null)return;
+  photoPrint.saved={source:draft.source,strength:draft.strength,result:draft.result,registration:buildPhotoRegistration(draft.result)};
+  photoPrint.active=true;photoPrint.revision++;invalidatePhotoStencil();document.getElementById('hudPatternName').textContent='自定义照片';
+  cancelPhotoDraft();updatePasteTexture();
+}
+function initPhotoImportUI(){
+  const find=selector=>document.querySelector(selector);
+  const ui=photoPrint.ui={entry:find('[data-photo-entry]'),button:find('[data-photo-import]'),file:find('[data-photo-file]'),error:find('[data-photo-entry-error]'),dialog:find('[data-photo-dialog]'),preview:find('[data-photo-preview]'),strength:find('[data-photo-strength]'),value:find('[data-photo-value]'),name:find('[data-photo-name]'),status:find('[data-photo-status]'),confirm:find('[data-photo-confirm]')};
+  ui.button.addEventListener('click',openPhotoImporter);ui.button.addEventListener('keydown',event=>event.stopPropagation());
+  ui.file.addEventListener('change',()=>{if(ui.file.files&&ui.file.files[0])readLocalPhoto(ui.file.files[0]);});
+  find('[data-photo-replace]').addEventListener('click',choosePhotoFile);find('[data-photo-cancel]').addEventListener('click',cancelPhotoDraft);ui.confirm.addEventListener('click',confirmPhotoDraft);
+  ui.dialog.addEventListener('cancel',event=>{event.preventDefault();cancelPhotoDraft();});
+  // Keep native modal focus/range/Enter behaviour from firing the exhibit's global hardware shortcuts.
+  ui.dialog.addEventListener('keydown',event=>event.stopPropagation());
+  ui.strength.addEventListener('input',()=>{
+    if(!photoPrint.draft)return;photoPrint.draft.strength=Number(ui.strength.value);ui.value.textContent=ui.strength.value+'%';ui.confirm.disabled=true;
+    if(photoPrint.previewFrame!==null)cancelAnimationFrame(photoPrint.previewFrame);
+    photoPrint.previewFrame=requestAnimationFrame(()=>{photoPrint.previewFrame=null;updatePhotoDraftPreview();});
+  });
+  syncPhotoImportUI();
+}
+
+function drawTraditionalMotif(ctx, cx, cy, idx) {
+  if(photoPrint.active&&photoPrint.saved){drawCustomPhotoMotif(ctx,cx,cy);return;}
+  // One two-colour, hand-cut stencil for wet paste, submerged resist and finished calico.
+  // Qilu vocabulary: full-ground flowers, seven-dot plum, linked stems and returning-key borders.
+  const ink=ctx.fillStyle;
+  const ground=`rgb(${AppState.finalRgb.r}, ${AppState.finalRgb.g}, ${AppState.finalRgb.b})`;
+  const TAU=Math.PI*2;
+  ctx.save();ctx.translate(cx,cy);ctx.scale(cx/256,cy/320);
+  ctx.lineCap='round';ctx.lineJoin='round';ctx.fillStyle=ink;ctx.strokeStyle=ink;
+  const at=(x,y,size,angle,draw,mirror=1)=>{ctx.save();ctx.translate(x,y);ctx.rotate(angle);ctx.scale(size*mirror,size);draw();ctx.restore();};
+  const fill=(draw,color=ink)=>{ctx.fillStyle=color;ctx.beginPath();draw();ctx.closePath();ctx.fill();};
+  const line=(draw,width=2,color=ink)=>{ctx.strokeStyle=color;ctx.lineWidth=width;ctx.beginPath();draw();ctx.stroke();};
+  const dot=(x,y,r,color=ink)=>{ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();};
+  function petal(length,width){
+    ctx.moveTo(0,7);ctx.bezierCurveTo(-width,0,-width,-length*.66,0,-length);
+    ctx.bezierCurveTo(width,-length*.66,width,0,0,7);
+  }
+  function leaf(x,y,size,angle){at(x,y,size,angle,()=>{
+    fill(()=>{ctx.moveTo(0,0);ctx.bezierCurveTo(-27,-18,-24,-48,0,-69);ctx.bezierCurveTo(25,-47,26,-19,0,0);});
+    line(()=>{ctx.moveTo(0,-7);ctx.bezierCurveTo(-3,-25,3,-42,0,-59);},2.2,ground);
+    for(let j=0;j<4;j++)line(()=>{const y=-17-j*10;ctx.moveTo(0,y+4);ctx.quadraticCurveTo(-10,y,-15+j,y-9);ctx.moveTo(0,y+4);ctx.quadraticCurveTo(10,y,15-j,y-9);},1.25,ground);
+  });}
+  function lobedLeaf(x,y,size,angle){at(x,y,size,angle,()=>{
+    fill(()=>{ctx.moveTo(0,12);ctx.bezierCurveTo(-13,7,-28,14,-43,1);ctx.lineTo(-29,-12);ctx.lineTo(-58,-30);ctx.lineTo(-39,-40);ctx.lineTo(-48,-64);ctx.lineTo(-19,-55);ctx.lineTo(0,-91);ctx.lineTo(20,-55);ctx.lineTo(48,-65);ctx.lineTo(39,-38);ctx.lineTo(58,-27);ctx.lineTo(29,-11);ctx.lineTo(42,4);ctx.bezierCurveTo(26,15,10,7,0,12);});
+    line(()=>{ctx.moveTo(0,7);ctx.lineTo(0,-77);ctx.moveTo(0,-9);ctx.lineTo(-43,-28);ctx.moveTo(0,-9);ctx.lineTo(43,-25);ctx.moveTo(0,-31);ctx.lineTo(-35,-54);ctx.moveTo(0,-31);ctx.lineTo(35,-55);},2.1,ground);
+    for(const sign of [-1,1])for(let j=0;j<3;j++)line(()=>{ctx.moveTo(sign*(12+j*6),-19-j*8);ctx.lineTo(sign*(25+j*6),-18-j*10);},1.1,ground);
+  });}
+  function flower(x,y,size,angle=0,petals=5){at(x,y,size,angle,()=>{
+    for(let i=0;i<petals;i++)at(0,0,1,i*TAU/petals,()=>{
+      fill(()=>{ctx.moveTo(-2,4);ctx.bezierCurveTo(-19,1,-23,-14,-13,-24);ctx.bezierCurveTo(-6,-31,4,-31,12,-24);ctx.bezierCurveTo(24,-13,18,0,2,4);});
+      line(()=>{ctx.moveTo(0,-9);ctx.quadraticCurveTo(-6,-15,-4,-21);},1.3,ground);
+    });
+    dot(0,0,8,ground);dot(0,0,3,ink);
+    for(let i=0;i<petals*2;i++){const a=i*TAU/(petals*2);line(()=>{ctx.moveTo(Math.cos(a)*8,Math.sin(a)*8);ctx.lineTo(Math.cos(a)*14,Math.sin(a)*14);},1.4,ground);dot(Math.cos(a)*14,Math.sin(a)*14,1.7,ground);}
+  });}
+  function bud(x,y,size,angle){at(x,y,size,angle,()=>{
+    fill(()=>{ctx.moveTo(0,9);ctx.bezierCurveTo(-22,1,-18,-22,0,-34);ctx.bezierCurveTo(19,-21,20,2,0,9);});
+    line(()=>{ctx.moveTo(-9,-9);ctx.quadraticCurveTo(0,-18,6,-26);ctx.moveTo(-7,4);ctx.quadraticCurveTo(5,-3,11,-12);},2,ground);
+    line(()=>{ctx.moveTo(-16,3);ctx.quadraticCurveTo(0,17,16,2);},2.5);leaf(-2,13,.36,-1.05);leaf(2,13,.36,1.05);
+  });}
+  function tendril(x,y,size,angle){at(x,y,size,angle,()=>{
+    line(()=>{ctx.moveTo(-37,15);ctx.bezierCurveTo(-21,-18,14,-27,29,-5);ctx.bezierCurveTo(47,22,5,42,-5,19);ctx.bezierCurveTo(-13,2,14,-3,13,12);},2.2);
+    leaf(-19,-3,.31,-.8);leaf(24,-11,.28,.9);
+  });}
+  function cloud(x,y,size,angle=0){at(x,y,size,angle,()=>{
+    line(()=>{ctx.moveTo(-48,11);ctx.bezierCurveTo(-68,0,-44,-22,-30,-11);ctx.bezierCurveTo(-38,-39,2,-46,10,-22);ctx.bezierCurveTo(32,-42,55,-15,39,-3);ctx.bezierCurveTo(65,-3,54,25,35,19);ctx.bezierCurveTo(17,14,7,30,-11,20);ctx.bezierCurveTo(-29,11,-31,23,-48,11);},3.2);
+    line(()=>{ctx.moveTo(-35,5);ctx.bezierCurveTo(-10,-7,-14,-23,0,-20);ctx.bezierCurveTo(15,-18,5,0,-4,-1);ctx.moveTo(13,9);ctx.bezierCurveTo(28,-4,43,1,37,9);},2);
+  });}
+  function lotus(x,y,size,angle=0){at(x,y,size,angle,()=>{
+    for(const [a,l,w] of [[-1.17,61,23],[1.17,61,23],[-.73,77,25],[.73,77,25],[-.36,86,25],[.36,86,25],[0,92,24]])at(0,9,1,a,()=>{
+      fill(()=>petal(l,w));line(()=>petal(l,w),2.4,ground);line(()=>{ctx.moveTo(0,-8);ctx.quadraticCurveTo(-5,-35,0,-l+17);},1.2,ground);
+    });
+    fill(()=>{ctx.moveTo(-61,5);ctx.bezierCurveTo(-43,46,42,46,61,5);ctx.bezierCurveTo(20,25,-20,25,-61,5);});
+    line(()=>{ctx.moveTo(-51,12);ctx.bezierCurveTo(-26,38,26,38,51,12);},2.2,ground);
+    for(let i=-3;i<=3;i++){line(()=>{ctx.moveTo(i*6,24);ctx.quadraticCurveTo(i*8,6,i*9,-3);},1.6,ground);dot(i*9,-3,2.4,ground);}
+  });}
+  function lotusLeaf(x,y,size,angle){at(x,y,size,angle,()=>{
+    fill(()=>{ctx.moveTo(0,11);ctx.bezierCurveTo(-6,0,-13,-3,-20,-12);ctx.bezierCurveTo(-29,-3,-52,-6,-57,-24);ctx.bezierCurveTo(-73,-42,-52,-68,-34,-65);ctx.bezierCurveTo(-32,-85,2,-84,13,-72);ctx.bezierCurveTo(35,-86,58,-63,54,-48);ctx.bezierCurveTo(80,-24,52,2,27,-8);ctx.bezierCurveTo(17,3,12,3,0,11);});
+    for(const [ex,ey]of [[-48,-30],[-40,-56],[-19,-67],[4,-68],[32,-61],[50,-39],[43,-18]])line(()=>{ctx.moveTo(0,8);ctx.bezierCurveTo(ex*.1,ey*.36,ex*.7,ey*.85,ex,ey);},1.7,ground);
+    line(()=>{ctx.moveTo(-51,-29);ctx.bezierCurveTo(-46,-60,-12,-75,7,-65);},1.2,ground);
+  });}
+  function pod(x,y,size,angle){at(x,y,size,angle,()=>{
+    fill(()=>{ctx.moveTo(-33,-17);ctx.bezierCurveTo(-39,-43,36,-46,34,-17);ctx.bezierCurveTo(25,7,10,22,0,31);ctx.bezierCurveTo(-13,17,-28,-1,-33,-17);});
+    line(()=>{ctx.moveTo(-32,-18);ctx.bezierCurveTo(-19,-2,19,-2,33,-18);},2,ground);
+    for(const [x,y]of [[-19,-24],[-6,-29],[9,-28],[23,-23],[-11,-15],[5,-15],[0,-4]]){dot(x,y,4,ground);dot(x+.5,y+.7,1.1,ink);}
+    line(()=>{ctx.moveTo(-18,0);ctx.quadraticCurveTo(-9,14,0,24);ctx.moveTo(16,0);ctx.lineTo(4,24);},1.4,ground);
+  });}
+  function waves(x,y,size,angle=0){at(x,y,size,angle,()=>{
+    for(let row=0;row<3;row++)line(()=>{ctx.moveTo(-150,row*12);for(let j=0;j<5;j++){const x=-150+j*60;ctx.bezierCurveTo(x+20,-15+row*12,x+40,15+row*12,x+60,row*12);}},2.1);
+    for(const sign of [-1,1])for(const [x,y,r]of [[112,-20,4],[134,-31,2.5],[145,-14,1.8]]){ctx.strokeStyle=ink;ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(sign*x,y,r,0,TAU);ctx.stroke();}
+  });}
+  function butterfly(x,y,size,angle=0){at(x,y,size,angle,()=>{
+    for(const sign of [-1,1])at(0,0,1,0,()=>{
+      fill(()=>{ctx.moveTo(3,-13);ctx.bezierCurveTo(24,-64,68,-79,68,-46);ctx.bezierCurveTo(83,-34,62,-7,39,5);ctx.bezierCurveTo(79,25,58,74,40,57);ctx.bezierCurveTo(26,68,12,36,3,16);});
+      line(()=>{ctx.moveTo(9,-11);ctx.bezierCurveTo(25,-37,44,-52,57,-51);ctx.bezierCurveTo(52,-24,24,-7,9,-2);ctx.moveTo(10,12);ctx.bezierCurveTo(29,13,51,31,45,48);ctx.bezierCurveTo(25,42,18,24,10,12);},2.3,ground);
+      for(let j=0;j<4;j++){dot(52-j*8,-35+j*9,2.7,ground);dot(21+j*5,25+j*5,1.9,ground);}
+      line(()=>{ctx.moveTo(12,-8);ctx.lineTo(43,-19);ctx.moveTo(17,-17);ctx.lineTo(43,-31);ctx.moveTo(17,21);ctx.lineTo(33,37);},1.3,ground);
+    },sign);
+    fill(()=>{ctx.moveTo(0,-26);ctx.bezierCurveTo(-7,-20,-6,27,0,37);ctx.bezierCurveTo(6,26,7,-19,0,-26);});
+    dot(0,-28,5);line(()=>{ctx.moveTo(-2,-31);ctx.bezierCurveTo(-10,-45,-20,-46,-16,-53);ctx.moveTo(2,-31);ctx.bezierCurveTo(10,-45,20,-46,16,-53);},1.8);
+    for(let j=0;j<5;j++)line(()=>{ctx.moveTo(-3,-12+j*8);ctx.lineTo(3,-12+j*8);},1.3,ground);
+  });}
+  function peony(x,y,size,angle=0){at(x,y,size,angle,()=>{
+    for(const [count,radius,length,width,turn]of [[11,35,43,19,0],[9,22,37,18,.23],[7,11,29,15,.04]])for(let i=0;i<count;i++)at(0,0,1,i*TAU/count+turn,()=>{
+      at(0,-radius,1,0,()=>{
+        const outline=()=>{ctx.moveTo(0,13);ctx.bezierCurveTo(-width,6,-width-5,-length*.4,-width,-length+9);ctx.bezierCurveTo(-width-3,-length-3,-6,-length-7,0,-length);ctx.bezierCurveTo(9,-length-9,width+7,-length+1,width,-length+11);ctx.bezierCurveTo(width+5,-length*.4,width,6,0,13);};
+        fill(outline);line(outline,2.3,ground);line(()=>{ctx.moveTo(0,4);ctx.bezierCurveTo(-5,-7,4,-19,0,-length+12);},1.1,ground);
+      });
+    });
+    dot(0,0,12);for(let i=0;i<12;i++){const a=i*TAU/12;line(()=>{ctx.moveTo(Math.cos(a)*4,Math.sin(a)*4);ctx.lineTo(Math.cos(a)*17,Math.sin(a)*17);},1.5,ground);dot(Math.cos(a)*17,Math.sin(a)*17,2,ground);}dot(0,0,3,ground);
+  });}
+  // Dense but subordinate seven-point plum ground; batched into one path.
+  ctx.save();ctx.globalAlpha*=.52;ctx.fillStyle=ink;ctx.beginPath();
+  for(let row=0,y=-239;y<=239;y+=24,row++)for(let x=-189+(row%2)*12;x<=189;x+=24){
+    ctx.moveTo(x+1.25,y);ctx.arc(x,y,1.25,0,TAU);
+    for(let n=0;n<6;n++){const a=n*TAU/6,px=x+Math.cos(a)*5.3,py=y+Math.sin(a)*5.3;ctx.moveTo(px+1.05,py);ctx.arc(px,py,1.05,0,TAU);}
+  }
+  ctx.fill();ctx.restore();
+  // Double rule, interlocking return-key band and four floral corner brackets.
+  ctx.strokeStyle=ink;ctx.lineWidth=5;ctx.strokeRect(-228,-292,456,584);ctx.lineWidth=1.8;ctx.strokeRect(-216,-280,432,560);
+  for(const sign of [-1,1]){
+    at(0,sign*269,1,sign<0?Math.PI:0,()=>{
+      for(let x=-165;x<=165;x+=30)line(()=>{ctx.moveTo(x-12,3);ctx.lineTo(x-12,-4);ctx.lineTo(x+9,-4);ctx.lineTo(x+9,4);ctx.lineTo(x-4,4);ctx.lineTo(x-4,0);},1.7);
+    });
+    at(sign*205,0,1,sign<0?Math.PI:0,()=>{
+      for(let y=-214;y<=214;y+=28)line(()=>{ctx.moveTo(0,y-10);ctx.bezierCurveTo(-10,y-7,-10,y+5,0,y+9);ctx.bezierCurveTo(10,y+5,10,y-7,0,y-10);},1.5);
+    });
+    for(const top of [-1,1])at(sign*187,top*250,.62,top<0?Math.PI:0,()=>{flower(0,0,.9);leaf(-11,13,.48,-1.15);leaf(11,13,.48,1.15);});
+  }
+
+  function sprig(x,y,size,angle){at(x,y,size,angle,()=>{
+    line(()=>{ctx.moveTo(0,43);ctx.bezierCurveTo(-7,24,8,-4,0,-31);ctx.moveTo(-1,18);ctx.quadraticCurveTo(-26,4,-29,-14);},2.5);
+    leaf(-1,27,.62,-.96);leaf(1,9,.56,.94);flower(0,-34,.89,.2,5);flower(-29,-15,.48,-.2);bud(20,30,.46,.8);
+  });}
+  // A second, leafy inner selvage and boughs fill the open ground without replacing the main subjects.
+  for(const sign of [-1,1]){
+    line(()=>{ctx.moveTo(sign*183,-217);for(let row=0;row<8;row++){const y=-217+row*54;ctx.bezierCurveTo(sign*173,y+16,sign*194,y+36,sign*183,y+54);}},1.8);
+    for(let row=0;row<8;row++){
+      const y=-196+row*54;leaf(sign*183,y,.31,sign*(row%2?-.72:-1.0));
+      if(row%2===0)flower(sign*181,y+18,.23,.2);
+    }
+  }
+  const infill=[
+    [[-46,-208,.57,-.5],[142,-18,.55,.3],[-142,26,.55,-.3],[47,208,.57,.5],[-153,-177,.42,-.7],[153,171,.42,.7]],
+    [[-133,-128,.51,-.6],[86,-199,.52,.7],[103,151,.65,.4],[-16,172,.69,-.5],[159,7,.43,.7],[-131,220,.39,-.4],[-111,-16,.42,-.4]],
+    [[-97,-119,.62,-.8],[46,-180,.69,.5],[137,-86,.57,.3],[-108,128,.57,-.6],[-43,205,.65,-.7],[157,146,.47,.7]],
+    [[30,-209,.65,.6],[147,-19,.62,.3],[-145,-8,.63,-.6],[3,213,.63,.4],[-112,-207,.47,-.6],[151,200,.43,.7]],
+    [[-140,-14,.62,-.5],[143,-63,.61,.6],[-9,120,.63,.2],[32,-206,.54,.5],[-150,183,.43,-.4],[153,202,.42,.6]],
+    [[0,-199,.58,0],[0,-74,.50,0],[-155,-34,.44,-.4],[155,-34,.44,.4],[-55,32,.50,-.6],[55,32,.50,.6],[0,206,.48,0]],
+    [[1,-153,.67,-.2],[-139,4,.61,-.4],[14,13,.63,.4],[139,-40,.55,.6],[-43,198,.62,-.5],[146,207,.51,.7]]
+  ];
+  for(const v of infill[idx]||[])sprig(...v);
+
+  if(idx===0){
+    function carp(x,y,angle){at(x,y,.94,angle,()=>{
+      // A muscular arched carp, not an oval: head, tapered belly, fan tail and cut fins.
+      fill(()=>{ctx.moveTo(81,4);ctx.bezierCurveTo(105,-9,128,-31,151,-43);ctx.bezierCurveTo(153,-14,137,1,128,10);ctx.bezierCurveTo(148,21,160,43,156,62);ctx.bezierCurveTo(126,43,105,26,81,24);});
+      fill(()=>{ctx.moveTo(-66,-54);ctx.lineTo(-51,-82);ctx.lineTo(-36,-72);ctx.lineTo(-20,-92);ctx.lineTo(-4,-71);ctx.lineTo(15,-76);ctx.lineTo(34,-48);});
+      fill(()=>{ctx.moveTo(-137,-9);ctx.bezierCurveTo(-131,-58,-55,-79,25,-48);ctx.bezierCurveTo(65,-31,78,-5,101,5);ctx.bezierCurveTo(67,12,38,47,-9,48);ctx.bezierCurveTo(-73,57,-124,34,-137,-9);});
+      line(()=>{ctx.moveTo(-81,-42);ctx.bezierCurveTo(-64,-13,-72,13,-88,30);ctx.moveTo(-130,0);ctx.lineTo(-118,3);},2.8,ground);
+      line(()=>{ctx.moveTo(-94,-37);ctx.quadraticCurveTo(-83,-15,-98,9);},1.5,ground);
+      for(const [x,y]of [[-107,15],[-117,9],[-102,27]])dot(x,y,1.4,ground);
+      dot(-112,-15,8,ground);dot(-113,-15,3.7);dot(-114,-17,1.2,ground);
+      for(let row=0;row<6;row++)for(let col=0;col<8;col++){
+        const x=-57+col*16+(row%2)*8,y=-35+row*13;
+        if(Math.pow((x+17)/82,2)+Math.pow((y-1)/45,2)<.87)line(()=>{ctx.moveTo(x-5,y-5);ctx.bezierCurveTo(x+7,y-4,x+8,y+5,x-5,y+7);},1.65,ground);
+      }
+      for(let j=0;j<6;j++)line(()=>{ctx.moveTo(96,13);ctx.quadraticCurveTo(119+j*4,-15+j*10,143+j*1.4,-30+j*15);},1.7,ground);
+      for(let j=0;j<5;j++)line(()=>{ctx.moveTo(-45+j*16,-54);ctx.lineTo(-40+j*13,-73-(j%2)*5);},1.4,ground);
+      fill(()=>{ctx.moveTo(-62,20);ctx.bezierCurveTo(-61,47,-31,70,-13,60);ctx.bezierCurveTo(-26,46,-39,26,-62,20);});
+      for(let j=0;j<4;j++)line(()=>{ctx.moveTo(-55+j*4,30);ctx.quadraticCurveTo(-45+j*7,48,-23+j*3,57);},1.4,ground);
+      line(()=>{ctx.moveTo(-134,-1);ctx.bezierCurveTo(-159,-11,-153,-30,-144,-26);ctx.moveTo(-130,10);ctx.bezierCurveTo(-156,18,-160,1,-152,3);},2);
+    });}
+    lotusLeaf(-93,-188,.62,-.45);lotusLeaf(101,192,.62,Math.PI-.45);
+    waves(0,-224,.96);waves(0,215,.96,Math.PI);
+    carp(-1,-78,0);carp(1,83,Math.PI);lotus(0,9,.67);
+    pod(89,-189,.56,.45);pod(-93,196,.5,-.4);
+    for(const sign of [-1,1]){tendril(sign*152,sign*99,.55,sign*Math.PI/2);flower(sign*152,-sign*166,.34);}
+  }else if(idx===1){
+    // Broad-to-fine branching, knots and incised bark, supporting a long-tailed magpie.
+    fill(()=>{ctx.moveTo(-163,230);ctx.bezierCurveTo(-134,131,-54,41,74,-172);ctx.bezierCurveTo(20,-57,-86,122,-139,232);});
+    const twigs=[[-118,155,-166,103,-160,17,-174,-72,7],[-91,116,-17,91,91,120,150,70,6],[-59,73,-100,-8,-63,-111,-84,-182,5],[-18,9,63,-16,130,-81,159,-143,4],[30,-66,-9,-135,5,-190,-5,-220,4],[69,-164,114,-173,138,-201,150,-220,3]];
+    for(const [x,y,a,b,c,d,ex,ey,w]of twigs)line(()=>{ctx.moveTo(x,y);ctx.bezierCurveTo(a,b,c,d,ex,ey);},w);
+    line(()=>{ctx.moveTo(-146,203);ctx.bezierCurveTo(-114,123,-46,43,15,-57);},2,ground);
+    for(const [x,y]of [[-117,157],[-72,91],[-25,19],[33,-86]])line(()=>{ctx.moveTo(x-3,y+8);ctx.quadraticCurveTo(x+7,y,x+2,y-9);},2,ground);
+    for(const [x,y,z,a]of [[-159,-68,.91,.3],[-146,35,.70,0],[-87,-163,.80,-.2],[-56,-62,.60,.5],[-3,-209,.67,.1],[146,-207,.65,.2],[139,-120,.81,-.2],[139,69,.79,.1],[79,111,.64,-.2],[-92,171,.68,.5],[-35,184,.58,0]])flower(x,y,z,a);
+    for(const [x,y,z,a]of [[-174,-122,.52,-.4],[-110,-199,.55,.5],[170,-161,.48,.5],[98,157,.49,1],[-135,89,.5,-.5]])bud(x,y,z,a);
+    at(36,-42,.95,-.10,()=>{
+      fill(()=>{ctx.moveTo(-24,11);ctx.bezierCurveTo(-55,-11,-42,-54,-19,-61);ctx.bezierCurveTo(-24,-87,-4,-105,14,-90);ctx.lineTo(49,-78);ctx.lineTo(18,-74);ctx.bezierCurveTo(29,-45,17,-9,0,12);ctx.lineTo(49,145);ctx.lineTo(29,135);ctx.lineTo(24,161);ctx.lineTo(9,139);ctx.lineTo(4,153);ctx.lineTo(-26,23);});
+      fill(()=>{ctx.moveTo(-23,-45);ctx.bezierCurveTo(-44,-22,-29,14,-9,21);ctx.bezierCurveTo(11,-2,5,-30,-23,-45);},ground);
+      for(let j=0;j<5;j++)line(()=>{ctx.moveTo(-25+j*5,-29+j*4);ctx.bezierCurveTo(-28+j*6,-7,-18+j*4,4,-10+j*3,7);},1.8);
+      for(let j=0;j<4;j++)line(()=>{ctx.moveTo(-14+j*6,22);ctx.bezierCurveTo(-2+j*8,64,13+j*8,110,14+j*7,136);},2,ground);
+      line(()=>{ctx.moveTo(-18,-61);ctx.quadraticCurveTo(-4,-48,10,-59);},3,ground);
+      for(let row=0;row<4;row++)for(let col=0;col<3;col++){const x=-27+col*8+row*2,y=-51+row*10;line(()=>{ctx.moveTo(x-2,y-3);ctx.quadraticCurveTo(x+4,y+2,x-1,y+5);},1.25,ground);}
+      dot(5,-83,4,ground);dot(6,-83,1.5);
+      line(()=>{ctx.moveTo(-17,15);ctx.lineTo(-22,39);ctx.lineTo(-35,45);ctx.moveTo(-9,19);ctx.lineTo(-8,40);ctx.lineTo(4,45);ctx.moveTo(-22,39);ctx.lineTo(-20,46);},2.6);
+    });
+    cloud(-118,-218,.56,-.1);cloud(107,212,.71);cloud(133,-9,.45,-.3);
+    for(const sign of [-1,1]){tendril(sign*118,sign*204,.55,sign*.7);leaf(sign*155,sign*154,.49,-sign*.8);}
+    for(const [x,y,a]of [[-151,100,.7],[-29,221,-.3],[161,139,1.1],[77,-219,.4]])at(x,y,.38,a,()=>fill(()=>petal(28,11)));
+  }else if(idx===2){
+    line(()=>{ctx.moveTo(-158,215);ctx.bezierCurveTo(-171,31,-119,-135,18,-225);ctx.moveTo(-125,86);ctx.bezierCurveTo(-9,183,109,154,163,51);},4.5);
+    for(const [x,y,z,a]of [[-144,164,.67,-.5],[-157,49,.73,-.6],[-128,-88,.76,-.6],[-66,-169,.72,-.8],[22,-212,.62,.8],[135,84,.67,1.1],[86,142,.65,.8]])leaf(x,y,z,a);
+    at(-12,18,1.05,-.13,()=>{
+      fill(()=>{ctx.moveTo(-35,-95);ctx.bezierCurveTo(-127,-101,-136,9,-91,87);ctx.bezierCurveTo(-64,129,-25,141,0,128);ctx.bezierCurveTo(43,144,106,104,116,48);ctx.bezierCurveTo(136,-28,98,-102,35,-95);ctx.lineTo(35,-120);ctx.lineTo(17,-109);ctx.lineTo(0,-135);ctx.lineTo(-17,-110);ctx.lineTo(-36,-122);});
+      fill(()=>{ctx.moveTo(-80,-36);ctx.bezierCurveTo(-70,-60,-54,-69,-38,-69);ctx.lineTo(-24,-81);ctx.lineTo(-11,-70);ctx.lineTo(4,-85);ctx.lineTo(20,-71);ctx.lineTo(35,-78);ctx.bezierCurveTo(56,-76,73,-58,80,-39);ctx.bezierCurveTo(98,-10,66,61,26,77);ctx.lineTo(9,63);ctx.lineTo(-11,80);ctx.bezierCurveTo(-55,65,-99,9,-80,-36);},ground);
+      for(let row=0;row<8;row++)for(let col=0;col<7;col++){
+        const x=-61+col*20+(row%2)*9,y=-46+row*16;
+        if(Math.pow((x+1)/76,2)+Math.pow((y-8)/68,2)<.83)at(x,y,.65+(row%3)*.025,(col-row)*.10,()=>{
+          fill(()=>{ctx.moveTo(0,-11);ctx.bezierCurveTo(-9,-5,-10,5,-4,10);ctx.bezierCurveTo(4,15,11,6,8,0);ctx.bezierCurveTo(7,-6,3,-9,0,-11);});
+          line(()=>{ctx.moveTo(-3,-3);ctx.quadraticCurveTo(-6,3,-2,6);},1.4,ground);
+        });
+      }
+      line(()=>{ctx.moveTo(-99,-5);ctx.bezierCurveTo(-106,49,-76,99,-40,109);ctx.moveTo(91,-20);ctx.bezierCurveTo(109,25,87,77,62,96);},2.6,ground);
+      for(let j=0;j<5;j++)line(()=>{const x=-28+j*14;ctx.moveTo(x,106);ctx.lineTo(x+3,113+(j%2)*3);},1.8,ground);
+      leaf(-23,-103,.74,-.94);leaf(28,-102,.70,.95);
+    });
+    flower(-118,-185,.72);flower(110,187,.78);bud(-79,205,.65,-.7);flower(150,-51,.46);butterfly(114,-174,.52,.24);
+    tendril(-131,142,.65,-.8);tendril(130,104,.65,1.1);cloud(4,218,.61);
+  }else if(idx===3){
+    line(()=>{ctx.moveTo(-112,227);ctx.bezierCurveTo(-16,157,-49,29,-33,-67);ctx.moveTo(-31,126);ctx.bezierCurveTo(45,173,87,154,95,115);ctx.moveTo(-38,115);ctx.bezierCurveTo(-104,128,-127,126,-135,76);ctx.moveTo(-30,-37);ctx.bezierCurveTo(33,-86,97,-135,137,-190);},4.6);
+    for(const [x,y,z,a]of [[-102,203,.86,-1.05],[-39,162,.91,.8],[-67,78,.77,-1.1],[62,183,.75,.8],[88,-145,.83,.8],[-110,-118,.72,-.9],[120,32,.64,1]])lobedLeaf(x,y,z,a);
+    peony(-32,-74,1.16,.14);peony(94,110,.70,-.13);bud(-135,80,.92,-.4);bud(131,-190,.71,.35);
+    for(const [x,y,z]of [[-145,-204,.46],[127,-64,.46],[-144,169,.40],[16,226,.43]])flower(x,y,z,.2,6);
+    tendril(131,-217,.61,-.6);tendril(-127,-22,.58,-.9);tendril(116,219,.63,.5);tendril(116,-100,.52,1.2);
+  }else if(idx===4){
+    line(()=>{ctx.moveTo(-104,218);ctx.bezierCurveTo(-53,113,-23,44,-29,-76);ctx.moveTo(2,224);ctx.bezierCurveTo(32,151,84,143,103,110);ctx.moveTo(29,202);ctx.bezierCurveTo(80,123,89,39,79,-5);ctx.moveTo(-77,202);ctx.bezierCurveTo(-97,177,-108,150,-105,123);},3.3);
+    lotusLeaf(-103,126,.94,-.26);lotusLeaf(115,-169,.70,.28);
+    lotus(-29,-65,1.09,-.1);lotus(105,112,.66,.22);pod(83,1,.72,.24);bud(-127,-101,.64,-.4);
+    waves(0,206,1.03);waves(0,-220,.94);
+    at(-105,-187,.74,-.38,()=>{
+      for(const sign of [-1,1])at(0,0,1,0,()=>{
+        fill(()=>{ctx.moveTo(1,-4);ctx.bezierCurveTo(26,-26,70,-21,57,-5);ctx.bezierCurveTo(42,6,17,4,1,-4);});
+        fill(()=>{ctx.moveTo(2,4);ctx.bezierCurveTo(24,1,61,10,49,22);ctx.bezierCurveTo(29,31,12,12,2,4);});
+        line(()=>{ctx.moveTo(10,-4);ctx.lineTo(49,-11);ctx.moveTo(12,8);ctx.lineTo(42,17);},1.4,ground);
+      },sign);
+      line(()=>{ctx.moveTo(0,-15);ctx.lineTo(0,54);},4);dot(0,-16,5);for(let j=0;j<6;j++)line(()=>{ctx.moveTo(-2,15+j*6);ctx.lineTo(2,15+j*6);},1.3,ground);
+    });
+    for(const sign of [-1,1]){tendril(sign*151,sign*64,.58,sign*Math.PI/2);flower(sign*148,-sign*195,.37);}
+  }else if(idx===5){
+    // A balanced pair of ornate butterflies above a linked flowering bough.
+    line(()=>{ctx.moveTo(-142,227);ctx.bezierCurveTo(-116,134,-110,103,-116,27);ctx.moveTo(142,227);ctx.bezierCurveTo(116,134,110,103,116,27);ctx.moveTo(-138,191);ctx.bezierCurveTo(-44,221,0,154,0,117);ctx.moveTo(138,191);ctx.bezierCurveTo(44,221,0,154,0,117);},3.8);
+    for(const sign of [-1,1]){
+      leaf(sign*126,181,.71,sign*1.05);leaf(sign*112,99,.70,-sign*.8);leaf(sign*59,191,.62,-sign*.7);leaf(sign*115,43,.57,sign*.65);
+      butterfly(sign*85,-99,.84,sign*.22);flower(sign*112,36,.67,.15,6);flower(sign*133,157,.64,-.12);bud(sign*169,-7,.55,sign*.4);
+      tendril(sign*95,-207,.67,sign*.6);flower(sign*26,-214,.39);flower(sign*158,-188,.37);tendril(sign*154,214,.48,sign*.7);
+    }
+    flower(0,122,1.15,.1,6);flower(0,10,.58,.3);bud(0,220,.68,0);cloud(0,-21,.44);
+  }else if(idx===6){
+    // Two hand-packed, tapered grape clusters; individual berries retain curved cuts.
+    line(()=>{ctx.moveTo(-151,228);ctx.bezierCurveTo(-166,64,-140,-123,-89,-202);ctx.bezierCurveTo(-8,-246,103,-207,143,-156);ctx.moveTo(-67,-171);ctx.bezierCurveTo(-78,-96,-73,-71,-70,-38);ctx.moveTo(116,-152);ctx.bezierCurveTo(113,-73,83,-4,79,52);},4.5);
+    lobedLeaf(-84,-152,1.02,-.52);lobedLeaf(111,-103,.91,.45);lobedLeaf(-116,179,.74,-.8);
+    function grapes(x,y,size,angle){at(x,y,size,angle,()=>{
+      const rows=[4,5,4,4,3,2,1];
+      for(let row=0;row<rows.length;row++){const count=rows[row],r=15-row*.62;
+        for(let j=0;j<count;j++){const bx=(j-(count-1)/2)*(r*1.77)+Math.sin(row*2+j)*2,by=row*23;
+          fill(()=>{ctx.moveTo(bx+r,by);ctx.bezierCurveTo(bx+r,by+r*.59,bx+r*.56,by+r,bx,by+r);ctx.bezierCurveTo(bx-r*.63,by+r,bx-r,by+r*.56,bx-r,by);ctx.bezierCurveTo(bx-r,by-r*.61,bx-r*.55,by-r,bx,by-r);ctx.bezierCurveTo(bx+r*.63,by-r,bx+r,by-r*.56,bx+r,by);});
+          line(()=>{ctx.moveTo(bx+r,by);ctx.bezierCurveTo(bx+r,by+r*.59,bx+r*.56,by+r,bx,by+r);ctx.bezierCurveTo(bx-r*.63,by+r,bx-r,by+r*.56,bx-r,by);ctx.bezierCurveTo(bx-r,by-r*.61,bx-r*.55,by-r,bx,by-r);ctx.bezierCurveTo(bx+r*.63,by-r,bx+r,by-r*.56,bx+r,by);},1.8,ground);
+          line(()=>{ctx.moveTo(bx-r*.55,by);ctx.quadraticCurveTo(bx-r*.6,by-r*.5,bx,by-r*.57);},1.25,ground);
+        }
+      }
+      line(()=>{ctx.moveTo(0,-14);ctx.quadraticCurveTo(-3,-42,8,-54);},3);
+    });}
+    grapes(-69,-26,.98,-.10);grapes(85,67,.82,.15);
+    tendril(-145,-88,.78,-.7);tendril(137,-193,.81,.4);tendril(140,188,.66,1);tendril(5,-201,.62,-.3);tendril(4,192,.63,.5);
+    for(const [x,y,z]of [[-138,-214,.43],[23,-114,.39],[-143,81,.47],[13,226,.40],[148,15,.38]])flower(x,y,z,0,6);
+    leaf(12,199,.57,.8);leaf(156,-3,.61,.6);
+  }
+  ctx.restore();
+}
+
+// ==================== 主循环渲染 ====================
+let lastTick = performance.now();
+
+function cameraFrameDistance(bottom,top,focusY,aspect,halfWidth=1.50,halfDepth=.85){
+  const tilt=Math.atan(.18),sin=Math.sin(tilt),cos=Math.cos(tilt),tan=Math.tan(42*Math.PI/360)*.94;
+  let distance=0;
+  for(const x of [-halfWidth,halfWidth])for(const y of [bottom,top])for(const z of [-halfDepth,halfDepth]){
+    const relativeY=y-focusY,up=cos*relativeY-sin*z,forward=sin*relativeY+cos*z;
+    distance=Math.max(distance,Math.abs(up)/tan+forward,Math.abs(x)/(tan*Math.max(.1,aspect))+forward);
+  }
+  return distance;
+}
+function cameraSubjectPoints(){
+  const rx=clothPivot.rotation.x,ry=clothPivot.rotation.y,cx=Math.cos(rx),sx=Math.sin(rx),cy=Math.cos(ry),sy=Math.sin(ry);
+  const world=(x,y,z)=>{const vx=x*cy+z*sy,vz=-x*sy+z*cy;return{x:vx+(clothPivot.position.x||0),y:y*cx-vz*sx+clothPivot.position.y,z:y*sx+vz*cx+(clothPivot.position.z||0)};};
+  const mx=clothMesh.position.x||0,my=clothMesh.position.y||0,mz=clothMesh.position.z||0;
+  const cloth=[],safe=[];
+  for(const x of [-1.2,1.2])for(const y of [-1.5,1.5])cloth.push(world(x+mx,y+my,mz));
+  // The real cloth depth is <=0.048, not the former padded 0.85-unit box.
+  for(const x of [-1.248,1.248])for(const y of [-1.548,1.5])for(const z of [0,.048])safe.push(world(x+mx,y+my,z+mz));
+  // Sample the cylindrical rod, rather than framing empty corners above it.
+  for(const x of [-1.31,1.31])for(let i=0;i<16;i++){const a=i*Math.PI/8;safe.push(world(x,1.55+Math.cos(a)*.06,Math.sin(a)*.06));}
+  if(AppState.stage===0){
+    const py=scraperMesh.rotation.y||0,c=Math.cos(py),sn=Math.sin(py);
+    for(const end of [-.18,.18])for(let i=0;i<16;i++){
+      const a=i*Math.PI/8,x=Math.cos(a)*.035,z=.13+Math.sin(a)*.035;
+      safe.push(world(x*c+z*sn+scraperMesh.position.x,1.43+end+scraperMesh.position.y,-x*sn+z*c+scraperMesh.position.z));
+    }
+  }
+  return{cloth,safe};
+}
+function cameraFitSubjectDistance(points,focusY,aspect){
+  const tilt=Math.atan(.18),sin=Math.sin(tilt),cos=Math.cos(tilt),tan=Math.tan(42*Math.PI/360)*.995;
+  let distance=.2;
+  for(const point of points){const y=point.y-focusY,up=cos*y-sin*point.z,forward=sin*y+cos*point.z;distance=Math.max(distance,Math.abs(up)/tan+forward,Math.abs(point.x)/(tan*Math.max(.1,aspect))+forward);}
+  return distance;
+}
+function cameraSubjectHeight(points,focusY,distance){
+  const tilt=Math.atan(.18),sin=Math.sin(tilt),cos=Math.cos(tilt),tan=Math.tan(42*Math.PI/360);
+  let lower=Infinity,upper=-Infinity;
+  for(const point of points){const y=point.y-focusY,depth=distance-sin*y-cos*point.z,screen=(cos*y-sin*point.z)/(depth*tan);lower=Math.min(lower,screen);upper=Math.max(upper,screen);}
+  return(upper-lower)/2;
+}
+function cameraDistanceForHeight(points,focusY,minimum,goal){
+  if(cameraSubjectHeight(points,focusY,minimum)<=goal)return minimum;
+  let near=minimum,far=minimum*2+10;
+  for(let i=0;i<22;i++){const middle=(near+far)/2;if(cameraSubjectHeight(points,focusY,middle)>goal)near=middle;else far=middle;}
+  return far;
+}
+function updateCameraFollow(dt){
+  const now=performance.now(),center=clothPivot.position.y+clothMesh.position.y;
+  const alpha=1-Math.pow(.95,Math.max(0,dt)*60);
+  cameraFollowY+=(center-cameraFollowY)*alpha;
+  const subject=cameraSubjectPoints();
+  const clothRequired=cameraFitSubjectDistance(subject.safe,cameraFollowY,camera.aspect);
+  // This is a cloth close shot: show the lip/upper vat, not the distant vat floor.
+  const vatRequired=clothRequired;
+  const includeVat=AppState.stage===1||vatAppearance>0;
+  const goalHeight=includeVat?.75:.875;
+  const target=cameraDistanceForHeight(subject.cloth,cameraFollowY,clothRequired,goalHeight);
+  const tilt=Math.atan(.18),cos=Math.cos(tilt),sin=Math.sin(tilt);
+  const current=camera.position.z/cos,key=AppState.stage+':'+(includeVat?'vat':'cloth');
+  if(cameraShotKey!==key){cameraShotKey=key;cameraShotStarted=now;cameraShotFromDistance=current;cameraShotComplete=false;}
+  // A finite half-second dolly avoids the old whole-scene framing jump.
+  let shot=Math.min(1,Math.max(0,(now-cameraShotStarted)/500));
+  if(dt>=.5)shot=1;
+  const eased=shot*shot*(3-2*shot);
+  let distance;
+  if(shot<1)distance=cameraShotFromDistance+(target-cameraShotFromDistance)*eased;
+  else if(!cameraShotComplete){distance=target;cameraShotComplete=true;}
+  else distance=current+(target-current)*alpha;
+  // Keep cloth/rod/knife in frame; lower vat may leave this deliberately close composition.
+  distance=Math.max(clothRequired,vatAppearance>0?vatRequired:0,distance);
+  vatCanReveal=distance>=vatRequired-1e-6;
+  camera.position.y=cameraFollowY+distance*sin;camera.position.z=distance*cos;
+  camera.lookAt(0,cameraFollowY,0);
+}
+function updateVatAppearance(dt){
+  // Frame the full deep vat before revealing it; the fade itself lasts 0.5 seconds.
+  const target=AppState.stage===1&&(vatCanReveal||vatAppearance>0)?1:0,step=Math.max(0,dt)/.5;
+  vatAppearance=target>vatAppearance?Math.min(target,vatAppearance+step):Math.max(target,vatAppearance-step);
+  if(vatAppearance<1e-9)vatAppearance=0;if(vatAppearance>1-1e-9)vatAppearance=1;
+  const visible=vatAppearance>0;
+  if(vatGroup)vatGroup.visible=visible;
+  if(vatWaterMesh){vatWaterMesh.visible=visible;vatWaterMesh.material.opacity=.58*vatAppearance;}
+  if(vatSwirl)vatSwirl.visible=visible;
+  if(!visible){if(dyeCloud)dyeCloud.visible=false;vatBubbles.forEach(b=>b.visible=false);}
+}
+function updateVatTransparency(dt){
+  const target=(AppState.stage===1||vatAppearance>0)?1:0,step=Math.max(0,dt)/.6;
+  vatWallFade=target>vatWallFade?Math.min(target,vatWallFade+step):Math.max(target,vatWallFade-step);
+  if(vatWallFade>1-1e-9)vatWallFade=1;if(vatWallFade<1e-9)vatWallFade=0;
+  vatWallMaterials.forEach(material=>{material.opacity=(1-.6*vatWallFade)*vatAppearance;material.transparent=true;material.depthWrite=vatAppearance===1&&vatWallFade===0;});
+  vatRim.material.opacity=(1-.3*vatWallFade)*vatAppearance;vatRim.material.transparent=true;vatRim.material.depthWrite=vatAppearance===1&&vatWallFade===0;
+  vatSolidMaterials.forEach(material=>{material.opacity=vatAppearance;material.transparent=true;material.depthWrite=vatAppearance===1;});
+}
+function updateVatScene(dt,now){
+  updateVatAppearance(dt);
+  updateVatTransparency(dt);
+  const soaking=AppState.stage===1;
+  if(vatSceneStage!==AppState.stage){
+    if(soaking){vatEntryArmed=true;dyeCloudAt=-Infinity;}
+    vatSceneStage=AppState.stage;
+  }
+  const inWater=Math.max(0,Math.min(1,(clothImmersion-.4)/1.2));
+  const levelTarget=vatSurfaceY+(soaking?.03*inWater:0);
+  vatLiquidY+=(levelTarget-vatLiquidY)*(1-Math.exp(-dt*3));
+  vatWaterMesh.position.y=vatLiquidY;vatWaterMesh.visible=vatAppearance>0;vatGroup.visible=vatAppearance>0;
+  const p=vatWaterMesh.geometry.attributes.position;
+  const amplitude=motionReduced?0:soaking?.009:.0015;
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),y=p.getY(i),r=Math.hypot(x,y);
+    p.setZ(i,Math.sin(r*13-now*.0012+Math.atan2(y,x))*amplitude*Math.max(0,1-r/1.44));
+  }
+  p.needsUpdate=true;vatWaterMesh.geometry.computeVertexNormals();
+  vatSwirl.position.y=vatLiquidY+.012;vatSwirl.material.opacity=(soaking?.12:.035)*vatAppearance;
+  if(!motionReduced)vatSwirl.rotation.z=now*.00007;
+  const contact=-1.51-clothImmersion<=vatLiquidY;
+  if(soaking&&vatEntryArmed&&contact){dyeCloudAt=now;vatEntryArmed=false;}
+  const age=(now-dyeCloudAt)/1000;
+  dyeCloud.visible=vatAppearance>0&&soaking&&!motionReduced&&age>=0&&age<.8;
+  if(dyeCloud.visible){const size=.25+age*1.4;dyeCloud.scale.set(size,size,size);dyeCloud.position.set(0,vatLiquidY+.018,0);dyeCloud.material.opacity=.40*Math.pow(1-age/.8,1.2)*vatAppearance;}
+  vatBubbles.forEach((bubble,i)=>{
+    bubble.visible=vatAppearance>0&&soaking&&contact&&!motionReduced;if(!bubble.visible)return;
+    const cycle=((now*.001+i*.53)/(5.2+i*.23))%1;
+    bubble.position.set(Math.sin(i*2.4)*.8+Math.sin(now*.001+i)*.025,-4.78+cycle*(vatLiquidY+4.78),Math.cos(i*2.4)*.48);
+    bubble.material.opacity=.34*Math.min(1,(1-cycle)*8)*vatAppearance;
+  });
+}
+// Observation-only controls: leave serial parsing and hardware target mapping intact.
+const clothViewLimits={yaw:Math.PI/3,pitch:Math.PI/6};
+const clothViewKeys={yaw:null,pitch:null,joyX:2048,joyY:2048};
+window.addEventListener('keydown',event=>{
+  if(event.code==='KeyA'||event.code==='KeyD')clothViewKeys.yaw=Math.max(-clothViewLimits.yaw,Math.min(clothViewLimits.yaw,AppState.currentYaw+(event.code==='KeyD'?.15:-.15)));
+  if(event.code==='KeyW'||event.code==='KeyS')clothViewKeys.pitch=Math.max(-clothViewLimits.pitch,Math.min(clothViewLimits.pitch,AppState.currentPitch+(event.code==='KeyS'?.12:-.12)));
+  if(event.code==='KeyR')clothViewKeys.yaw=clothViewKeys.pitch=null;
+});
+function clothObservationFitsVat(yaw,pitch){
+  // Test the swept textile envelope and the rounded rod against the existing inner wall/lip/floor.
+  const cx=Math.cos(pitch),sx=Math.sin(pitch),cy=Math.cos(yaw),sy=Math.sin(yaw);
+  const fits=(x,y,z,padding)=>{
+    const vx=x*cy+z*sy,vz=-x*sy+z*cy;
+    const wy=y*cx-vz*sx+clothPivot.position.y,wz=y*sx+vz*cx;
+    if(wy-padding> -1.70)return true;
+    if(wy-padding< -4.94)return false;
+    const fraction=Math.max(0,Math.min(1,(-1.82-(wy-padding))/3.15));
+    const radius=1.47-.20*fraction-.015;
+    return Math.hypot(vx,wz)+padding<=radius;
+  };
+  for(let row=0;row<=44;row++)for(const x of [-1.2,1.2]){
+    const y=1.5-row*3/44,pin=row/44;
+    if(!fits(x,y+clothMesh.position.y,0,.048*Math.pow(pin,1.5)))return false;
+  }
+  for(const x of [-1.25,0,1.25])if(!fits(x,1.55,0,.06))return false;
+  return true;
+}
+function updateClothObservation(dt){
+  const normalize=value=>{const delta=value-2048,n=Math.max(-1,Math.min(1,delta/(delta<0?2048:2047)));return Math.abs(n)<=.14?0:n;};
+  if(AppState.joyX!==clothViewKeys.joyX){clothViewKeys.yaw=null;clothViewKeys.joyX=AppState.joyX;}
+  if(AppState.joyY!==clothViewKeys.joyY){clothViewKeys.pitch=null;clothViewKeys.joyY=AppState.joyY;}
+  if(AppState.targetYaw===0&&AppState.targetPitch===0)clothViewKeys.yaw=clothViewKeys.pitch=null;
+  const yawTarget=clothViewKeys.yaw===null?normalize(AppState.joyX)*clothViewLimits.yaw:clothViewKeys.yaw;
+  const pitchTarget=clothViewKeys.pitch===null?normalize(AppState.joyY)*clothViewLimits.pitch:clothViewKeys.pitch;
+  const alpha=1-Math.pow(.88,Math.max(0,dt)*60);
+  let yaw=AppState.currentYaw+(yawTarget-AppState.currentYaw)*alpha;
+  let pitch=AppState.currentPitch+(pitchTarget-AppState.currentPitch)*alpha;
+  if(Math.abs(yaw-yawTarget)<1e-5)yaw=yawTarget;
+  if(Math.abs(pitch-pitchTarget)<1e-5)pitch=pitchTarget;
+  // An immersed rectangular cloth cannot tilt through a solid deep vat wall.
+  // Keep full yaw; reduce only the pitch that would collide, while the vat is present.
+  if((AppState.stage===1||vatAppearance>0)&&!clothObservationFitsVat(yaw,pitch)){
+    let low=0,high=1;
+    for(let i=0;i<16;i++){const mid=(low+high)/2;if(clothObservationFitsVat(yaw,pitch*mid))low=mid;else high=mid;}
+    pitch*=low;
+  }
+  AppState.currentYaw=yaw;AppState.currentPitch=pitch;
+  clothPivot.rotation.y=yaw;clothPivot.rotation.x=pitch;
+}
+
+function mainLoop(now) {
+  const dt = Math.min(0.1, (now - lastTick) / 1000);
+  lastTick = now;
+
+  if (AppState.stage === 1 && !AppState.isLidOpen) {
+    AppState.soakSeconds += dt;
+  } else if (AppState.stage === 2 && AppState.isLidOpen) {
+    AppState.oxidizeSeconds += dt;
+  } else if (AppState.stage === 3 && AppState.isLidOpen) {
+    // Optional deeper colour keeps developing during the decision, as before.
+    AppState.oxidizeSeconds += dt;
+  }
+  advanceOxidationDecision();
+  syncNextStepGuidance();
+
+  updateMetricsUI();
+  updateMouseSurface(dt,now);
+  updatePasteTexture();
+
+  document.getElementById('hudColorSwatch').style.backgroundColor = AppState.finalHex;
+  document.getElementById('hudColorName').textContent = AppState.colorTitle;
+
+  const sinking=AppState.stage===1;
+  const immersionTarget=sinking ? .18+3.18*Math.min(1,AppState.soakSeconds/5) : AppState.stage===2||AppState.stage===3 ? -.8 : 0;
+  clothImmersion+=(immersionTarget-clothImmersion)*(1-Math.exp(-dt*4));
+  clothPivot.position.y=-clothImmersion+stageMotionLift(now);
+  updateClothObservation(dt);
+  // Reframe the moving cloth instead of letting it fall out of the viewport.
+  updateCameraFollow(dt);
+  // Dolly and vertical follow are fitted together by updateCameraFollow.
+  clothMesh.material.roughness=AppState.stage===0?.95:sinking?.90:.94;
+  clothTopFold.material.roughness=clothMesh.material.roughness;
+  clothStageShadow.visible=AppState.stage!==1;
+
+  const yawDeg = Math.round((clothPivot.rotation.y * 180) / Math.PI);
+  const pitchDeg = Math.round((clothPivot.rotation.x * 180) / Math.PI);
+  document.getElementById('hudAngleText').textContent = `水平 ${yawDeg}° · 俯仰 ${pitchDeg}°`;
+  document.getElementById('yawDegLabel').textContent = `${yawDeg}°`;
+  document.getElementById('pitchDegLabel').textContent = `${pitchDeg}°`;
+
+  updateClothDynamics(dt);
+  const timeSec = now * 0.002;
+  const posAttr = clothGeo.attributes.position;
+  clothWaveBoost = Math.max(0, clothWaveBoost - dt * 1.5);
+  const amp = motionReduced?0:(AppState.stage===1?.008:.004)+Math.min(1,clothWaveBoost)*.006;
+
+  for (let i = 0; i < posAttr.count; i++) {
+    const x = clothBasePos[i * 3];
+    const y = clothBasePos[i * 3 + 1];
+    const pinFactor = Math.max(0, (1.5 - y) / 3.0);
+    const waveZ = Math.sin(x * 2.5 + now * Math.PI / 2000) * Math.cos(y * 1.8) * amp * pinFactor;
+    const pressing = AppState.stage === 0 && lastPasteStrokeAt !== null
+      ? Math.max(0, 1 - (now - lastPasteStrokeAt) / 240) : 0;
+    const nearBlade = Math.exp(-Math.pow((x - targetScraperX) / .20, 2));
+    const contact = AppState.stage === 0 ? nearBlade : 0;
+    const pressureRipple = -0.018 * pressing * nearBlade * Math.cos((x - targetScraperX) * 15);
+    const bending=clothVertexMotion(x,y,now*.001);
+    const drape=fabricDrape(x,y);
+    const proposed={x:bending.x,y:bending.y+drape.y,z:drape.z+waveZ*(1-contact)+(motionReduced?0:pressureRipple)+bending.z+mouseRippleAt(x,y,now)+(motionReduced?0:.004*Math.sin(now*Math.PI/2000)*pinFactor*pinFactor)};
+    const safe=clampClothVertex(x,y,proposed);
+    posAttr.setX(i,safe.x);posAttr.setY(i,safe.y);posAttr.setZ(i,safe.z);
+  }
+  posAttr.needsUpdate = true;
+  clothGeo.computeVertexNormals();
+
+  scraperMesh.visible = (AppState.stage === 0);
+  // Keep the blade and the painted footprint registered to the same pot position.
+  scraperMesh.position.x = targetScraperX;
+  const press = lastPasteStrokeAt === null ? 0 : Math.max(0, 1 - (now - lastPasteStrokeAt) / 240);
+  scraperMesh.rotation.y+=(Math.max(-.035,Math.min(.035,scraperTilt))*press-scraperMesh.rotation.y)*.2;
+  const contactLineZ=0; // Contact vertices are constrained to the original cloth plane.
+  scraperMesh.position.z=contactLineZ+.020-press*.003;
+  scraperContactShadow.position.z=contactLineZ+.002;
+  scraperContactShadow.visible = scraperMesh.visible;
+  scraperContactShadow.position.x = targetScraperX;
+
+  updateVatScene(dt,now);
+
+  renderer.render(scene, camera);
+  requestAnimationFrame(mainLoop);
+}
+
+function updateMetricsUI() {
+  const readout = document.getElementById('metricReadout');
+  const pLabel = document.getElementById('progressLabel');
+  const pPercent = document.getElementById('progressPercent');
+  const pFill = document.getElementById('progressBarFill');
+  const passMark = document.getElementById('passMark');
+
+  const legend = document.querySelector('[data-progress-legend]');
+  if (legend) legend.textContent = AppState.stage === 0
+    ? '完整扫满全宽，六次往复刮满' : '▲ 黄色标线为最低及格标准';
+  const status = document.querySelector('[data-paste-status]');
+  if (status) {
+    status.hidden = AppState.stage !== 0;
+    const average = pasteColumns.reduce((sum,v) => sum+v,0) / 512;
+    const label = average < .4 ? '薄' : average < .8 ? '适中' : '厚实';
+    const coverage = AppState.pasteProgress >= 100 ? '100% ✓' : Math.floor(AppState.pasteProgress) + '%';
+    status.textContent = '浆层状态：' + label + ' · 刮满：' + coverage;
+  }
+  if (AppState.stage === 0) {
+    const average = pasteColumns.reduce((sum,v) => sum+v,0) / 512;
+    const pct = (average * 100).toFixed(1);
+    readout.textContent = `平均浆层厚度: ${pct}%`;
+    pLabel.textContent = "平均浆层厚度";
+    pPercent.textContent = `${pct}%`;
+    pFill.style.width = `${average * 100}%`;
+    // Average thickness has no global pass line; each column must reach 0.8.
+    passMark.hidden = true;
+  } else if (AppState.stage === 1) {
+    passMark.hidden = false;
+    const sec = AppState.soakSeconds.toFixed(1);
+    const pct = Math.min(100, Math.round((AppState.soakSeconds / 12) * 100));
+    readout.textContent = `${sec} s`;
+    pLabel.textContent = "靛蓝隐色体渗透程度";
+    pPercent.textContent = `${sec} 秒`;
+    pFill.style.width = `${pct}%`;
+    passMark.style.left = "50%";
+  } else {
+    passMark.hidden = false;
+    const sec = AppState.oxidizeSeconds.toFixed(1);
+    const pct = Math.min(100, Math.round((AppState.oxidizeSeconds / 35) * 100));
+    readout.textContent = `${sec} s`;
+    pLabel.textContent = "脱氢氧化发色深度 (越久越深)";
+    pPercent.textContent = `${sec} 秒`;
+    pFill.style.width = `${pct}%`;
+    passMark.style.left = "28.5%";
+  }
+}
+
+// ==================== 个性化证书绘制与导出 ====================
+function renderCertificatePreview() {
+  const c = document.getElementById('exportCanvas');
+  const ctx = c.getContext('2d');
+  const w = c.width, h = c.height;
+
+  ctx.fillStyle = "#f7f3e8";
+  ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = "#cbd5e1";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(16, 16, w - 32, h - 32);
+
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = 320;
+  offCanvas.height = 360;
+  drawClothToContext(offCanvas.getContext('2d'), 320, 360, true);
+  ctx.drawImage(offCanvas, 50, 36, 320, 360);
+
+  const hash = Math.abs(Math.round(AppState.oxidizeSeconds * 137 + AppState.agitationEnergy * 53 + AppState.dyeRounds * 911 + (AppState.colorSeed & 65535))).toString(16).toUpperCase().padStart(4, '0');
+  AppState.specimenId = `SD-2026-${hash}`;
+
+  ctx.fillStyle = "#1e293b";
+  ctx.font = "700 18px Noto Sans SC, sans-serif";
+  ctx.fillText(`齐鲁非遗蓝印花布 · ${activePatternName()}`, 50, 428);
+
+  ctx.fillStyle = "#475569";
+  ctx.font = "12px sans-serif";
+  ctx.fillText(`成色定级：${AppState.colorTitle} (${AppState.finalHex})`, 50, 452);
+  ctx.fillText(`工艺参数：第 ${AppState.dyeRounds} 浸 · 透氧 ${AppState.oxidizeSeconds.toFixed(1)} 秒`, 50, 472);
+  ctx.fillText(`档案编号：${AppState.specimenId}`, 50, 492);
+
+  ctx.fillStyle = AppState.finalHex;
+  ctx.fillRect(320, 415, 50, 50);
+
+  ctx.fillStyle = "#b91c1c";
+  ctx.fillRect(320, 474, 50, 24);
+  ctx.fillStyle = "#fff";
+  ctx.font = "700 11px Noto Sans SC, sans-serif";
+  ctx.fillText("齐鲁手作", 323, 490);
+
+  document.getElementById('certTitle').textContent = `齐鲁非遗蓝印花布 · ${AppState.colorTitle}`;
+  document.getElementById('certHex').textContent = AppState.finalHex;
+  document.getElementById('certTime').textContent = `${AppState.dyeRounds}浸 · ${AppState.oxidizeSeconds.toFixed(1)}s`;
+  document.getElementById('certId').textContent = AppState.specimenId;
+}
+
+function generateAndExportCertificate() {
+  renderCertificatePreview();
+  downloadCertificate();
+  AppState.isExported = true;
+  document.querySelector('[data-completion-reset]').hidden=false;
+  clearAllSpotlights();
+  document.getElementById('guideTitle').textContent = "🎉 专属非遗作品已导出保存！按【蓝帽按键1】可开启新一轮染布";
+  document.getElementById('guideSub').textContent = "再次按【黄帽按键2】可重复下载当前成品图";
+  syncNextStepGuidance();
+}
+
+function downloadCertificate() {
+  const c = document.getElementById('exportCanvas');
+  const link = document.createElement('a');
+  link.download = `山东蓝印花布_${activePatternName()}_${AppState.specimenId}.png`;
+  link.href = c.toDataURL('image/png');
+  link.click();
+}
+
+function resetAll() {
+  cancelPhotoDraft();clearCustomPhotoSelection();
+  pasteColumns.fill(0);pasteWetAt.fill(-Infinity);pastePassDose.fill(0);pastePassDirection=0;
+  pasteLegCoats.fill(0);pasteLegVisited.fill(0);pasteLegAnchor=null;pasteCompleteLegs=0;
+  lastPasteStrokeAt=null;scraperTilt=0;targetScraperX=0;clothWaveBoost=0;lastResistPattern=-1;
+  mouseSurface.hover=false;mouseSurface.reveal=0;mouseSurface.ripples=[];hoverStencilKey='';
+  clothDynamics.x=clothDynamics.y=clothDynamics.vx=clothDynamics.vy=0;
+  AppState.stage=0;AppState.patternIdx=0;AppState.pasteProgress=0;
+  AppState.soakSeconds=0;AppState.oxidizeSeconds=0;AppState.dyeRounds=1;AppState.agitationEnergy=0;
+  AppState.isExported=false;AppState.specimenId='';
+  let seed;do{seed=Math.floor(Math.random()*0xFFFFFF);}while(seed===AppState.colorSeed||clothSeedSignature(seed)===clothSeedSignature(AppState.colorSeed));AppState.colorSeed=seed;
+  AppState.finalRgb={r:244,g:241,b:234};AppState.finalHex='#F4F1EA';AppState.colorTitle='原白棉坯';
+  document.getElementById('hudPatternName').textContent=PATTERNS[0].name;
+  document.getElementById('hudColorName').textContent='原白棉坯';document.getElementById('hudColorSwatch').style.backgroundColor='#F4F1EA';
+  document.getElementById('certTitle').textContent='齐鲁非遗蓝印花布';
+  for(const id of ['certHex','certTime','certId'])document.getElementById(id).textContent='';
+  const certificate=document.getElementById('exportCanvas');certificate.getContext('2d').clearRect(0,0,certificate.width,certificate.height);
+  document.querySelector('[data-completion-reset]').hidden=true;
+  lastMouseHit=null;mouseSurface.lastRippleAt=-Infinity;lastMotionStage=0;stageMotionStarted=-Infinity;
+  clothImmersion=0;vatLiquidY=vatSurfaceY;vatSceneStage=-1;vatEntryArmed=false;dyeCloudAt=-Infinity;
+  if(dyeCloud)dyeCloud.visible=false;vatBubbles.forEach(b=>b.visible=false);
+  if(clothPivot){clothPivot.position.set(0,0,0);clothPivot.rotation.set(0,0,0);}
+  if(clothGeo){const position=clothGeo.attributes.position;for(let i=0;i<position.count;i++){position.setX(i,clothBasePos[i*3]);position.setY(i,clothBasePos[i*3+1]);position.setZ(i,0);}position.needsUpdate=true;clothGeo.computeVertexNormals();}
+  AppState.currentYaw=0;AppState.currentPitch=0;resetCameraView();
+  cameraFollowY=0;cameraShotKey='';cameraShotStarted=-Infinity;cameraShotComplete=false;vatWallFade=0;vatAppearance=0;vatCanReveal=false;
+  updateVatAppearance(0);
+  if(vatWallMaterials.length&&vatRim)updateVatTransparency(0);
+  if(camera&&clothPivot)updateCameraFollow(1);
+  nextGuidanceKey='';newClothFeedbackUntil=performance.now()+1800;
+  clearTimeout(chipGlowTimer);document.getElementById('guideBanner').classList.remove('chip-celebrate');
+  if(workshopPanelElement)setWorkshopPanelVisible(false);
+  jumpToStage(0);updateMetricsUI();updatePasteTexture();syncNextStepGuidance();
+}
+
+// ==================== 虚拟控件与键盘调试 ====================
+function setSimLid(open) {
+  const val = open ? Math.min(4095, AppState.lightThreshold + 1200) : Math.max(0, AppState.lightThreshold - 700);
+  evaluateLidState(val);
+}
+function handleSimPot(val) { handlePotInput(parseInt(val, 10)); }
+
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); setSimLid(!AppState.isLidOpen); }
+  else if (e.code === 'Tab') { e.preventDefault(); triggerBtn1(); }
+  else if (e.code === 'Enter') { e.preventDefault(); triggerBtn2(); }
+  else if (e.code === 'ArrowRight') { handlePotInput(Math.min(4095, AppState.potVal + 320)); }
+  else if (e.code === 'ArrowLeft') { handlePotInput(Math.max(0, AppState.potVal - 320)); }
+  else if (e.code === 'KeyA') { AppState.targetYaw = Math.max(-2.85, AppState.targetYaw - 0.15); }
+  else if (e.code === 'KeyD') { AppState.targetYaw = Math.min(2.85, AppState.targetYaw + 0.15); }
+  else if (e.code === 'KeyW') { AppState.targetPitch = Math.max(-1.05, AppState.targetPitch - 0.12); }
+  else if (e.code === 'KeyS') { AppState.targetPitch = Math.min(1.05, AppState.targetPitch + 0.12); }
+  else if (e.code === 'KeyR') { resetCameraView(); }
+});
+
+// ==================== Persistent next-action guidance (presentation layer) ====================
+let nextGuidanceKey = '';
+let chipGlowTimer=null,newClothFeedbackUntil=-Infinity;
+function advanceOxidationDecision() {
+  if (AppState.stage === 2 && AppState.oxidizeSeconds >= 10) jumpToStage(3);
+}
+function nextStepState() {
+  if (AppState.stage === 0) return AppState.pasteProgress >= 100
+    ? {title:'浆已刮满！请合上盒盖入缸',why:'为什么：防染浆形成完整屏障后，才能抵御靛蓝渗入。',actions:[{text:'下一步：合上盒盖入缸',card:'cardLight',lid:'close',kind:'blue',act:()=>setSimLid(false)}]}
+    : {title:'转动【旋钮】往复刮浆，按蓝帽按键 1 选花版',why:'为什么：往复多刮几遍，浆层越厚，花纹边缘越清晰。',pending:'转动【旋钮】往复刮浆，待各处刮满'};
+  if (AppState.stage === 1) return AppState.soakSeconds >= 6
+    ? {title:'掀开盒盖，让布匹出缸发色',why:'为什么：浸足 6 秒后，靛蓝隐色体已初步渗入棉纤维。',actions:[{text:'下一步：掀开盒盖出缸',card:'cardLight',lid:'open',kind:'blue',act:()=>setSimLid(true)}]}
+    : {title:'保持盒盖合上，转动【旋钮】匀速翻布',why:'为什么：保持浸染环境稳定，色液才能均匀进入纤维。',pending:'保持合盖浸染至 6 秒，再掀开盒盖'};
+  if (AppState.stage === 2) return {title:'保持盒盖敞开，让靛蓝透氧发色',why:'为什么：接触氧气后靛蓝才逐渐显蓝，满 10 秒再选择复染或除浆。',pending:'保持盒盖敞开，透氧至 10 秒'};
+  if (AppState.stage === 3) return {title:'选择合盖再染一浸，或按黄帽按键 2 除浆',why:'为什么：复染增加色泽深度；除浆显露防染留下的纹样。',actions:[
+    {text:'下一步：合上盒盖，再染一浸',card:'cardLight',lid:'close',kind:'blue',act:()=>setSimLid(false)},
+    {text:'下一步：按黄帽按键 2 除浆',card:'btn2Card',kind:'yellow',act:()=>triggerBtn2()}]};
+  if (AppState.isExported) return {title:'按蓝帽按键 1 开始新一轮染布',why:'为什么：当前作品已导出，可再次按黄帽按键 2 保存。',actions:[{text:'下一步：按蓝帽按键 1 重新染布',card:'btn1Card',kind:'blue',act:()=>triggerBtn1()}]};
+  return {title:'按黄帽按键 2 导出作品图',why:'为什么：数字标本会记录本次浸染、透氧与手作冰裂纹。',actions:[{text:'下一步：按黄帽按键 2 导出作品图',card:'btn2Card',kind:'yellow',act:()=>triggerBtn2()}]};
+}
+function shortNextLabel(action) {
+  if(action.lid==='close')return AppState.stage===0?'合盖入缸':'合盖复染';
+  if(action.lid==='open')return '掀盖出缸';
+  if(action.card==='btn1Card')return '按蓝键重来';
+  return AppState.stage===4?'按黄键导出':'按黄键除浆';
+}
+function initHudFeedback(){
+  const hud=document.querySelector('.stage-hud');let previous=hud.textContent;let timer;
+  new MutationObserver(()=>{const text=hud.textContent;if(text===previous)return;previous=text;hud.classList.add('hud-changed');clearTimeout(timer);timer=setTimeout(()=>hud.classList.remove('hud-changed'),700);}).observe(hud,{subtree:true,childList:true,characterData:true});
+}
+function chipInstruction(){
+  if(performance.now()<newClothFeedbackUntil)return '新布已备好 · 转动旋钮，开始刮浆';
+  if(AppState.stage===0){
+    if(AppState.pasteProgress>=100)return '浆已刮满！合上盒盖入缸';
+    const remaining=Math.max(0,6-pasteCompleteLegs/2);
+    return '转动旋钮，往复刮浆（还差 '+remaining+' 遍）';
+  }
+  if(AppState.stage===1)return AppState.soakSeconds>=6?'掀开盒盖，出缸发色':'保持合盖浸染（还差 '+Math.max(0,6-AppState.soakSeconds).toFixed(1)+' 秒）';
+  if(AppState.stage===2)return '保持开盖透氧（还差 '+Math.max(0,10-AppState.oxidizeSeconds).toFixed(1)+' 秒）';
+  if(AppState.stage===3)return '按黄键除浆，或合盖再染一浸';
+  return AppState.isExported?'再来一块布，开始下一次染色':'按黄键，导出作品图';
+}
+
+function syncNextStepGuidance() {
+  const state=nextStepState(),actions=state.actions||[];
+  document.querySelector('[data-completion-reset]').hidden=AppState.stage!==4||!AppState.isExported;
+  const text=chipInstruction(),title=document.getElementById('guideTitle');
+  if(title.textContent!==text)title.textContent=text;
+  const sub=document.getElementById('guideSub');if(sub.textContent!==state.why)sub.textContent=state.why;
+  const ready=actions.length>0,key=AppState.stage+':'+state.title;
+  const chip=document.getElementById('guideBanner');chip.dataset.ready=String(ready);chip.dataset.final=String(AppState.stage===4);
+  if(nextGuidanceKey===key)return;
+  nextGuidanceKey=key;
+  if(ready){chip.classList.add('chip-celebrate');clearTimeout(chipGlowTimer);chipGlowTimer=setTimeout(()=>chip.classList.remove('chip-celebrate'),2000);}
+  document.querySelectorAll('.next-pending').forEach(el=>{el.classList.remove('next-pending');el.removeAttribute('data-next-label');});
+  actions.forEach(action=>{
+    const card=document.getElementById(action.card);card.classList.add('next-pending');card.setAttribute('data-next-label',shortNextLabel(action));
+    if(action.lid){const control=document.querySelector('[data-lid-action="'+action.lid+'"]');if(control)control.classList.add('next-pending');}
+  });
+}
+
+// ==================== Display-only panel and fullscreen controls ====================
+let workshopPanelVisible = false;
+let serialWasConnected = false;
+let workshopPanelElement=null,workshopPanelHome=null,workshopPanelMarker=null;
+let stageFullscreen=false,panelBeforeFullscreen=false;
+function setWorkshopPanelVisible(visible) {
+  workshopPanelVisible = visible;
+  const layout = document.querySelector('main.workshop-layout');
+  const panel = workshopPanelElement || layout.querySelector('aside');
+  const stage = layout.querySelector('section');
+  layout.classList.toggle('panel-collapsed', !visible);
+  stage.classList.toggle('lg:col-span-12', !visible);
+  stage.classList.toggle('lg:col-span-8', visible);
+  document.getElementById('canvasContainer').classList.toggle('workbench-open',visible);
+  panel.inert = !visible;
+  panel.setAttribute('aria-hidden', String(!visible));
+  document.querySelectorAll('[data-panel-toggle]').forEach(button => {
+    button.textContent = '工作台';
+    button.setAttribute('aria-expanded', String(visible));
+  });
+}
+function toggleWorkshopPanel() { setWorkshopPanelVisible(!workshopPanelVisible); }
+function resizeWorkshopStage() {
+  const container = document.getElementById('threeCanvas');
+  if (!renderer || !camera || !container.clientWidth || !container.clientHeight) return;
+  camera.aspect = container.clientWidth / container.clientHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(container.clientWidth, container.clientHeight, false);
+}
+async function toggleWorkshopFullscreen() {
+  const canvas=document.getElementById('canvasContainer');
+  if(stageFullscreen){
+    if(document.fullscreenElement===canvas)await document.exitFullscreen();
+    finishStageFullscreen();return;
+  }
+  panelBeforeFullscreen=workshopPanelVisible;stageFullscreen=true;
+  canvas.classList.add('is-stage-fullscreen');
+  setWorkshopPanelVisible(false);
+  document.querySelector('[data-fullscreen-workbench]').appendChild(workshopPanelElement);
+  document.querySelector('[data-fullscreen-toggle]').textContent='退出全屏';
+  resizeWorkshopStage();
+  try{await canvas.requestFullscreen();}
+  catch(error){
+    // Embedded browsers may deny native fullscreen: keep a usable viewport stage.
+    canvas.classList.add('viewport-fullscreen');
+    document.querySelector('[data-fullscreen-toggle]').title='画布已铺满窗口；按 ESC 退出';
+  }
+}
+function finishStageFullscreen(){
+  if(!stageFullscreen)return;
+  stageFullscreen=false;
+  const canvas=document.getElementById('canvasContainer');
+  canvas.classList.remove('is-stage-fullscreen','viewport-fullscreen');
+  workshopPanelHome.insertBefore(workshopPanelElement,workshopPanelMarker);
+  document.querySelector('[data-fullscreen-toggle]').textContent='全屏';
+  setWorkshopPanelVisible(panelBeforeFullscreen);resizeWorkshopStage();
+}
+
+function syncWorkshopConnection() {
+  const connected = document.getElementById('serialText').textContent === 'ESP32 硬件已实时联通';
+  // Connection never changes the manually selected workshop visibility.
+  serialWasConnected = connected;
+  const connect=document.getElementById('connectSerialBtn');
+  if(connect.textContent!=='连接 ESP32 串口')connect.textContent='连接 ESP32 串口';
+}
+function syncStageViewport(){
+  const height=document.querySelector('header.cloth-header').getBoundingClientRect().height;
+  document.documentElement.style.setProperty('--header-block-size',height+'px');
+}
+function initWorkshopUI() {
+  syncStageViewport();
+  new ResizeObserver(syncStageViewport).observe(document.querySelector('header.cloth-header'));
+
+
+  workshopPanelElement=document.querySelector('main.workshop-layout').querySelector('aside');
+  workshopPanelHome=workshopPanelElement.parentNode;
+  workshopPanelMarker=document.createComment('workshop-panel-home');
+  workshopPanelHome.insertBefore(workshopPanelMarker,workshopPanelElement);
+  setWorkshopPanelVisible(false);
+  initHudFeedback();
+  initMotionPreferences();
+  initMouseSurface();
+  new MutationObserver(syncWorkshopConnection).observe(document.getElementById('serialText'), {childList:true,characterData:true,subtree:true});
+  syncWorkshopConnection();
+  new ResizeObserver(resizeWorkshopStage).observe(document.getElementById('threeCanvas'));
+  document.addEventListener('keydown',event=>{if(event.code==='Escape' && stageFullscreen && !document.fullscreenElement)finishStageFullscreen();});
+  document.addEventListener('fullscreenchange', () => {
+    const button = document.querySelector('[data-fullscreen-toggle]');
+    button.textContent = document.fullscreenElement ? '退出全屏' : '全屏';
+    if(!document.fullscreenElement && stageFullscreen && !document.getElementById('canvasContainer').classList.contains('viewport-fullscreen'))finishStageFullscreen();
+    resizeWorkshopStage();
+  });
+}
+
+// ==================== Web Serial 真实 ESP32 串口通信 ====================
+let port = null;
+let reader = null;
+let frameCount = 0;
+
+async function connectESP32() {
+  if (!("serial" in navigator)) {
+    alert("请使用 Google Chrome 或 Microsoft Edge 浏览器打开以支持串口连接！");
+    return;
+  }
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+
+    document.getElementById('serialDot').className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+    document.getElementById('serialText').textContent = "ESP32 硬件已实时联通";
+    document.getElementById('connectSerialBtn').textContent = "✅ 已连接硬件";
+
+    readSerialLoop();
+  } catch (err) {
+    console.error("串口连接失败:", err);
+  }
+}
+
+async function readSerialLoop() {
+  const textDecoder = new TextDecoderStream();
+  port.readable.pipeTo(textDecoder.writable);
+  reader = textDecoder.readable.getReader();
+
+  let buffer = "";
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += value;
+      const lines = buffer.split("\n");
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        const clean = line.trim();
+        if (clean) parseHardwareLine(clean);
+      }
+    }
+  } catch (error) {
+    console.error("串口读取中断:", error);
+  }
+}
+
+function parseHardwareLine(line) {
+  const parts = line.split(",");
+  if (parts.length < 4) return;
+
+  const light = parseInt(parts[0], 10);
+  const pot   = parseInt(parts[1], 10);
+  const btn1  = parseInt(parts[2], 10);
+  const btn2  = parseInt(parts[3], 10);
+
+  if (!isNaN(light)) evaluateLidState(light);
+  if (!isNaN(pot))   handlePotInput(pot);
+
+  if (btn1 === 1 && AppState.prevBtn1 === 0) triggerBtn1();
+  if (btn2 === 1 && AppState.prevBtn2 === 0) triggerBtn2();
+  AppState.prevBtn1 = btn1;
+  AppState.prevBtn2 = btn2;
+
+  if (parts.length >= 7) {
+    const jx = parseInt(parts[4], 10);
+    const jy = parseInt(parts[5], 10);
+    const sw = parseInt(parts[6], 10);
+    handleJoystickInput(jx, jy, sw);
+  }
+
+  frameCount++;
+  if (frameCount % 5 === 0) {
+    appendLog(line);
+  }
+}
+
+function appendLog(msg) {
+  const logEl = document.getElementById('serialLog');
+  const row = document.createElement('div');
+  row.textContent = `> ${msg}`;
+  logEl.appendChild(row);
+  if (logEl.children.length > 25) logEl.removeChild(logEl.firstChild);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+initThreeScene();
+initWorkshopUI();
+initPhotoImportUI();
+jumpToStage(0);
+requestAnimationFrame(mainLoop);
+</script>
+</body>
+</html>
